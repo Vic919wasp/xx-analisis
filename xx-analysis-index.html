@@ -1,0 +1,595 @@
+<!-- ============================================================
+     CONTEXTO: XX Analysis — analizador armónico/rítmico para
+     cualquier canción de YouTube usando Gemini API.
+     API key inyectada en deploy por GitHub Actions.
+     ============================================================
+     ÍNDICE DE NAVEGACIÓN
+     [001] HEAD / META          - línea 14
+     [002] ESTILOS CSS          - línea 22
+     [003] ESTRUCTURA HTML      - línea 290
+     [004] DATOS Y ESTADO       - línea 385
+     [005] YOUTUBE API          - línea 425
+     [006] GEMINI API           - línea 480
+     [007] RENDER UI            - línea 570
+     [008] INICIALIZACIÓN       - línea 670
+     ============================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<!-- [001] HEAD / META -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XX Analysis — Music Analyzer</title>
+
+<!-- [002] ESTILOS CSS -->
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:  #0a0a0b;
+  --s1:  #131315;
+  --s2:  #1a1a1d;
+  --s3:  #222226;
+  --bd:  rgba(255,255,255,0.07);
+  --bd2: rgba(255,255,255,0.13);
+  --tx:  #e2e0da;
+  --tx2: #7a7875;
+  --tx3: #3e3d3b;
+  --ac:  #c8a84b;
+  --ac2: rgba(200,168,75,0.12);
+  --ac3: rgba(200,168,75,0.3);
+  --red: #c84b4b; --pur: #9b4bc8; --grn: #4bc87a; --blu: #4b8ec8; --yel: #c8a84b;
+  --r: 6px; --rl: 10px;
+  --ff: 'Helvetica Neue', Arial, sans-serif;
+  --fs: 'Georgia', serif;
+  --fm: 'Courier New', monospace;
+}
+body { background: var(--bg); color: var(--tx); font-family: var(--ff); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+
+/* LAYOUT */
+.app { max-width: 1080px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+/* HEADER */
+.hd { display: flex; justify-content: space-between; align-items: center; padding-bottom: .875rem; border-bottom: 0.5px solid var(--bd2); flex-wrap: wrap; gap: 8px; }
+.logo { font-family: var(--fs); font-size: 22px; color: var(--tx); letter-spacing: .01em; }
+.logo span { color: var(--ac); }
+.hd-sub { font-size: 11px; color: var(--tx2); margin-top: 2px; }
+.badge { font-size: 10px; padding: 3px 8px; border-radius: var(--r); border: 0.5px solid var(--ac3); background: var(--ac2); color: var(--ac); }
+
+/* INPUT PANEL */
+.input-panel { background: var(--s1); border: 0.5px solid var(--bd2); border-radius: var(--rl); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: .75rem; }
+.ip-row { display: flex; gap: 8px; align-items: center; }
+.ip-label { font-size: 11px; color: var(--tx2); white-space: nowrap; }
+.url-input { flex: 1; background: var(--bg); border: 0.5px solid var(--bd2); border-radius: var(--r); color: var(--tx); font-family: var(--fm); font-size: 12px; padding: 7px 10px; outline: none; transition: border-color .15s; }
+.url-input:focus { border-color: var(--ac3); }
+.url-input::placeholder { color: var(--tx3); }
+.btn { padding: 7px 18px; background: var(--ac); color: #000; border: none; border-radius: var(--r); cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; transition: opacity .15s; }
+.btn:hover { opacity: .85; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.hint { font-size: 10px; color: var(--tx3); font-style: italic; }
+
+/* STATUS */
+.status { font-size: 11px; padding: 6px 10px; border-radius: var(--r); display: none; }
+.status.loading { background: var(--ac2); color: var(--ac); border: 0.5px solid var(--ac3); display: block; }
+.status.error   { background: rgba(200,75,75,.12); color: #e07a7a; border: 0.5px solid rgba(200,75,75,.3); display: block; }
+.spinner { display: inline-block; animation: spin 1s linear infinite; margin-right: 5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* MAIN GRID */
+.main { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; }
+.left { display: flex; flex-direction: column; gap: .875rem; }
+
+/* VIDEO */
+.video-wrap { position: relative; width: 100%; padding-top: 56.25%; background: var(--s2); border-radius: var(--rl); overflow: hidden; border: 0.5px solid var(--bd); }
+.video-wrap > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+.vph { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--tx3); font-size: 12px; }
+.vph .big { font-size: 40px; }
+
+/* NOW BAR */
+.now-bar { background: var(--s1); border: 0.5px solid var(--bd); border-radius: var(--r); padding: .625rem .875rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 40px; }
+.now-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--tx3); flex-shrink: 0; transition: background .3s; }
+.now-lbl  { font-size: 10px; color: var(--tx3); }
+.now-name { font-size: 13px; color: var(--ac); font-weight: 500; flex: 1; }
+.now-m    { font-size: 10px; padding: 2px 6px; background: var(--ac2); color: var(--ac); border: 0.5px solid var(--ac3); border-radius: var(--r); }
+.now-t    { font-family: var(--fm); font-size: 11px; color: var(--tx2); }
+
+/* TIMELINE */
+.tl-lbl  { font-size: 10px; color: var(--tx3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; }
+.timeline { display: flex; height: 26px; border-radius: var(--r); overflow: hidden; gap: 1px; background: var(--bd); }
+.tl-seg  { display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: rgba(255,255,255,.3); cursor: pointer; position: relative; overflow: hidden; transition: filter .15s; flex-shrink: 0; }
+.tl-seg:hover { filter: brightness(1.6); }
+.tl-seg.active { outline: 2px solid var(--ac); outline-offset: -1px; z-index: 2; color: var(--ac); }
+.tl-prog { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,.16); pointer-events: none; }
+
+/* DETAIL */
+.detail { background: var(--s1); border: 0.5px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
+.det-empty { padding: 2rem; text-align: center; color: var(--tx3); font-size: 12px; font-style: italic; line-height: 1.8; }
+.det-head { background: var(--s2); padding: .75rem 1rem; border-bottom: 0.5px solid var(--bd); }
+.det-title { font-family: var(--fs); font-size: 16px; font-weight: 400; }
+.det-meta  { font-size: 11px; color: var(--tx2); margin-top: 2px; }
+.det-badges { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+.db   { font-size: 10px; padding: 2px 6px; border-radius: var(--r); border: 0.5px solid; }
+.db-t { background: rgba(75,142,200,.1); color: #7ab4e0; border-color: rgba(75,142,200,.2); }
+.db-k { background: rgba(200,168,75,.1);  color: #d4af5a; border-color: rgba(200,168,75,.2); }
+.db-f { background: rgba(75,200,122,.1);  color: #5dd491; border-color: rgba(75,200,122,.2); }
+.det-body { padding: .875rem 1rem; display: flex; flex-direction: column; gap: .75rem; }
+
+/* CHORDS */
+.sl { font-size: 10px; color: var(--tx3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+.sl::after { content: ''; flex: 1; height: 0.5px; background: var(--bd2); }
+.cgrid { display: grid; gap: 4px; }
+.cbox { border: 0.5px solid var(--bd2); border-left: 2px solid var(--tx3); border-radius: var(--r); padding: 6px 8px; min-height: 44px; position: relative; background: var(--bg); }
+.cbox.modal   { border-left-color: var(--red); }
+.cbox.tension { border-left-color: var(--pur); }
+.cbox.resolve { border-left-color: var(--grn); }
+.cbox.jazz    { border-left-color: var(--blu); }
+.cbox.bright  { border-left-color: var(--yel); }
+.cbox.neutral { border-left-color: var(--tx3); }
+.cn  { font-family: var(--fs); font-size: 14px; }
+.cs  { font-size: 9px; color: var(--tx2); margin-top: 1px; }
+.cb2 { position: absolute; top: 4px; right: 6px; font-size: 9px; color: var(--tx3); }
+
+/* RHYTHM */
+.rh-lbl { font-size: 10px; color: var(--tx2); margin-bottom: 4px; }
+.rrow   { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; }
+.pp  { width: 20px; height: 20px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+.pps { background: var(--tx); color: var(--bg); }
+.ppw { background: var(--s3); color: var(--tx3); border: 0.5px solid var(--bd2); }
+.rh-note { font-size: 9px; color: var(--tx3); margin-left: 5px; }
+
+/* COMMENT + CARDS */
+.cmt  { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.6; padding-left: 10px; border-left: 2px solid var(--ac); }
+.mcards { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.mc   { background: var(--s2); border-radius: var(--r); padding: 7px 9px; }
+.mc .l { font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.mc .v { font-size: 10px; color: var(--tx2); line-height: 1.5; }
+
+/* LEGEND */
+.leg { display: flex; gap: 8px; flex-wrap: wrap; }
+.li  { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--tx3); }
+.ld  { width: 7px; height: 7px; border-radius: 1px; }
+
+/* RIGHT PANEL */
+.right { background: var(--s1); border: 0.5px solid var(--bd); border-radius: var(--rl); overflow: hidden; display: flex; flex-direction: column; }
+.rh-hdr { padding: .625rem .875rem; border-bottom: 0.5px solid var(--bd); font-size: 10px; color: var(--tx3); text-transform: uppercase; letter-spacing: .07em; display: flex; justify-content: space-between; }
+.rh-hdr span { font-size: 11px; color: var(--tx2); text-transform: none; letter-spacing: 0; }
+.slist { overflow-y: auto; flex: 1; max-height: 640px; }
+.slist-empty { padding: 1.5rem; text-align: center; color: var(--tx3); font-size: 11px; font-style: italic; line-height: 1.8; }
+.si { display: flex; align-items: center; gap: 7px; padding: .5rem .875rem; cursor: pointer; border-bottom: 0.5px solid var(--bd); transition: background .1s; }
+.si:last-child { border-bottom: none; }
+.si:hover { background: var(--s2); }
+.si.active { background: var(--ac2); border-left: 2px solid var(--ac); padding-left: calc(.875rem - 2px); }
+.si-num  { font-family: var(--fm); font-size: 10px; color: var(--tx3); min-width: 22px; }
+.si-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.si-name { font-size: 11px; color: var(--tx); flex: 1; }
+.si-time { font-family: var(--fm); font-size: 10px; color: var(--tx3); }
+
+/* SYNC OFFSET */
+.sync-bar { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--tx2); }
+.sync-bar input[type=range] { flex: 1; accent-color: var(--ac); }
+.sync-val { font-family: var(--fm); font-size: 11px; color: var(--ac); min-width: 38px; }
+.sync-bar button { padding: 3px 8px; background: transparent; border: 0.5px solid var(--bd2); border-radius: var(--r); color: var(--tx2); cursor: pointer; font-size: 10px; }
+.sync-bar button:hover { background: var(--s2); }
+
+.footer { font-size: 10px; color: var(--tx3); font-style: italic; padding-top: .5rem; border-top: 0.5px solid var(--bd); }
+
+/* ANALYZING OVERLAY */
+.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; align-items: center; justify-content: center; }
+.ov.show { display: flex; }
+.ov-box { background: var(--s1); border: 0.5px solid var(--bd2); border-radius: var(--rl); padding: 2rem 2.5rem; text-align: center; max-width: 380px; width: 90%; }
+.ov-title { font-family: var(--fs); font-size: 18px; margin-bottom: 6px; }
+.ov-sub   { font-size: 11px; color: var(--tx2); line-height: 1.6; }
+.ov-bar   { margin-top: 16px; height: 3px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+.ov-fill  { height: 100%; background: var(--ac); border-radius: 2px; width: 0%; transition: width .4s; }
+.ov-step  { font-size: 11px; color: var(--ac); margin-top: 8px; font-family: var(--fm); }
+</style>
+</head>
+<body>
+
+<!-- [003] ESTRUCTURA HTML -->
+<div class="ov" id="ov">
+  <div class="ov-box">
+    <div class="ov-title">Analizando canción</div>
+    <div class="ov-sub">Gemini está analizando la estructura armónica y rítmica...</div>
+    <div class="ov-bar"><div class="ov-fill" id="ovFill"></div></div>
+    <div class="ov-step" id="ovStep">Iniciando...</div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="hd">
+    <div>
+      <div class="logo">XX <span>Analysis</span></div>
+      <div class="hd-sub">Análisis armónico · rítmico · sincronizado con YouTube</div>
+    </div>
+    <span class="badge">Gemini API</span>
+  </div>
+
+  <div class="input-panel">
+    <div class="ip-row">
+      <span class="ip-label">YouTube URL:</span>
+      <input type="text" class="url-input" id="ytUrl"
+        placeholder="https://www.youtube.com/watch?v=..."
+        autocomplete="off">
+      <button class="btn" id="btnAnalyze" onclick="startAnalysis()">Analizar</button>
+    </div>
+    <div class="hint">Pegá cualquier URL de YouTube · Enter para analizar · El análisis puede tardar 10-20 segundos</div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="main" id="mainGrid" style="display:none">
+    <div class="left">
+
+      <div class="video-wrap">
+        <div id="ytPlayer">
+          <div class="vph">
+            <div class="big">▶</div>
+            <div>El video cargará aquí</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sync-bar">
+        <span>Sync offset:</span>
+        <input type="range" id="offsetSlider" min="-15" max="15" step="0.5" value="0"
+          oninput="updateOffset(this.value)">
+        <span class="sync-val" id="offsetVal">0.0s</span>
+        <button onclick="resetOffset()">Reset</button>
+      </div>
+
+      <div class="now-bar">
+        <div class="now-dot" id="nowDot"></div>
+        <span class="now-lbl">ahora:</span>
+        <span class="now-name" id="nowName">—</span>
+        <span class="now-m" id="nowMeter">—</span>
+        <span class="now-t" id="nowTime">0:00</span>
+      </div>
+
+      <div>
+        <div class="tl-lbl">mapa de secciones · click para saltar</div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+
+      <div class="detail" id="detail">
+        <div class="det-empty">Analizá una canción para ver el análisis sección por sección</div>
+      </div>
+
+    </div>
+
+    <div class="right">
+      <div class="rh-hdr">secciones <span id="secCount">—</span></div>
+      <div class="slist" id="slist">
+        <div class="slist-empty">Pegá una URL de YouTube<br>y hacé click en Analizar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">XX Analysis · Gemini API · análisis armónico-rítmico en tiempo real · github.com/Vic919wasp/xx-analysis</div>
+</div>
+
+<!-- [004] DATOS Y ESTADO -->
+<script>
+// API key inyectada por GitHub Actions al hacer deploy
+const GEMINI_KEY = '__GEMINI_API_KEY__';
+
+let SECTIONS = [];
+let TOTAL = 0;
+let currentSection = 0;
+let ytPlayer = null;
+let syncInterval = null;
+let offsetSecs = 0;
+
+const COLORS = {
+  intro:'#252525', riff:'#2a1515', verse:'#151822', estrofa:'#151822',
+  'pre-coro':'#1a1525', precoro:'#1a1525', chorus:'#152018', coro:'#152018',
+  bridge:'#252015', puente:'#252015', instrumental:'#1a2022', solo:'#152018',
+  break:'#221515', climax:'#251a15', outro:'#1a1a1a'
+};
+const DOTS = {
+  intro:'#666', riff:'#c84b4b', verse:'#4b8ec8', estrofa:'#4b8ec8',
+  'pre-coro':'#9b4bc8', precoro:'#9b4bc8', chorus:'#4bc87a', coro:'#4bc87a',
+  bridge:'#c8a84b', puente:'#c8a84b', instrumental:'#4b8ec8', solo:'#4bc87a',
+  break:'#c84b4b', climax:'#c84b4b', outro:'#555'
+};
+const gc = t => COLORS[t?.toLowerCase()] || '#1e1e1e';
+const gd = t => DOTS[t?.toLowerCase()]   || '#888';
+
+// [005] YOUTUBE API
+function extractId(url) {
+  const pp = [/[?&]v=([^&#]+)/, /youtu\.be\/([^?&#]+)/, /embed\/([^?&#]+)/, /shorts\/([^?&#]+)/];
+  for (const p of pp) { const m = url.match(p); if (m) return m[1]; }
+  return null;
+}
+
+function onYouTubeIframeAPIReady() {
+  if (window._pendingVid) { createPlayer(window._pendingVid); window._pendingVid = null; }
+}
+
+function createPlayer(vid) {
+  if (ytPlayer && typeof ytPlayer.destroy === 'function') ytPlayer.destroy();
+  ytPlayer = new YT.Player('ytPlayer', {
+    height: '100%', width: '100%', videoId: vid,
+    playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1 },
+    events: {
+      onStateChange: e => {
+        if (e.data === YT.PlayerState.PLAYING) startSync(); else stopSync();
+      },
+      onError: () => setStatus('error', 'YouTube bloqueó el video. Desactivá Shields en Brave para esta página (ícono del león en la barra de dirección).')
+    }
+  });
+}
+
+function startSync() {
+  stopSync();
+  syncInterval = setInterval(() => {
+    if (!ytPlayer?.getCurrentTime) return;
+    const t = Math.max(0, ytPlayer.getCurrentTime() + offsetSecs);
+    const sec = getSectionAt(t);
+    if (sec !== currentSection) { currentSection = sec; renderDetail(sec); renderList(); }
+    updateNow(t, sec);
+    updateTL(t, sec);
+  }, 200);
+}
+function stopSync() { if (syncInterval) { clearInterval(syncInterval); syncInterval = null; } }
+
+function seekTo(i) {
+  const t = Math.max(0, SECTIONS[i].start - offsetSecs);
+  if (ytPlayer?.seekTo) { ytPlayer.seekTo(t, true); ytPlayer.playVideo(); }
+  currentSection = i; renderDetail(i); renderList();
+}
+
+function getSectionAt(t) {
+  for (let i = SECTIONS.length - 1; i >= 0; i--) if (t >= SECTIONS[i].start) return i;
+  return 0;
+}
+
+function updateOffset(v) { offsetSecs = parseFloat(v); document.getElementById('offsetVal').textContent = parseFloat(v).toFixed(1) + 's'; }
+function resetOffset() { offsetSecs = 0; document.getElementById('offsetSlider').value = 0; document.getElementById('offsetVal').textContent = '0.0s'; }
+
+// [006] GEMINI API
+async function startAnalysis() {
+  const url = document.getElementById('ytUrl').value.trim();
+  if (!url) return setStatus('error', 'Ingresá una URL de YouTube.');
+
+  const vid = extractId(url);
+  if (!vid) return setStatus('error', 'URL inválida. Usá una URL de youtube.com o youtu.be');
+
+  showOv(true); setOvStep('Preparando análisis...', 10);
+
+  const prompt = `Eres un experto en teoría musical, armonía jazz, análisis rítmico y prog metal.
+
+Analizá la canción del video de YouTube con ID: ${vid}
+URL completa: ${url}
+
+Identificá el artista y título por el ID del video, luego analizá TODAS las secciones de la canción con detalle armónico y rítmico.
+
+Respondé ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, solo JSON puro):
+
+{
+  "title": "Título de la canción",
+  "artist": "Artista",
+  "total_duration": 300,
+  "bpm": 120,
+  "key": "E minor",
+  "sections": [
+    {
+      "id": "01",
+      "name": "Nombre descriptivo de la sección",
+      "type": "intro|riff|verse|chorus|bridge|solo|break|outro|instrumental|precoro",
+      "start": 0,
+      "end": 20,
+      "time_signature": "4/4",
+      "key": "E minor",
+      "feel": "oscuro / pesado",
+      "bpm": 120,
+      "chords": [
+        {
+          "name": "Em7",
+          "function": "i7",
+          "beats": "2",
+          "type": "modal",
+          "note": "tónica"
+        }
+      ],
+      "rhythm_pattern": [1,0,1,0,1,0,1,0],
+      "rhythm_label": "4/4 · negras · palm mute",
+      "comment": "Descripción musical de 2-3 oraciones sobre esta sección.",
+      "harmony": "Análisis armónico detallado: modo, función tonal, movimientos no diatónicos.",
+      "rhythm_analysis": "Análisis rítmico: agrupamiento, cambios de métrica, groove.",
+      "color": "Color sonoro, concepto, influencias musicales.",
+      "voicings": "Voicings específicos, instrumentación, técnicas."
+    }
+  ]
+}
+
+Reglas importantes:
+- chord "type" debe ser exactamente: modal, tension, resolve, jazz, bright, o neutral
+- rhythm_pattern: array de 0s y 1s (8-24 elementos), 1 = pulso fuerte
+- start y end en segundos reales aproximados
+- Identificá TODAS las secciones, incluyendo repeticiones (Estrofa 1, Estrofa 2, etc.)
+- Analizá influencias jazzísticas, modales, cromáticas cuando las haya
+- Sé específico: Em7 en vez de Em, ♭VII en vez de "séptimo grado", etc.
+- Si hay cambios de métrica, indicalos en time_signature (ej: "4/4 → 7/8")`;
+
+  try {
+    setOvStep('Consultando Gemini...', 30);
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
+        })
+      }
+    );
+
+    setOvStep('Recibiendo análisis...', 60);
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    setOvStep('Procesando secciones...', 80);
+
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const analysis = JSON.parse(clean);
+
+    if (!analysis.sections?.length) throw new Error('Gemini no devolvió secciones. Probá con otra URL.');
+
+    setOvStep('Construyendo player...', 95);
+    loadAnalysis(analysis, vid);
+    setOvStep('¡Listo!', 100);
+    setTimeout(() => showOv(false), 500);
+
+  } catch (err) {
+    showOv(false);
+    setStatus('error', `Error: ${err.message}`);
+  }
+}
+
+function loadAnalysis(data, vid) {
+  SECTIONS = data.sections;
+  TOTAL = data.total_duration || SECTIONS[SECTIONS.length - 1]?.end || 300;
+  currentSection = 0;
+
+  document.getElementById('mainGrid').style.display = 'grid';
+  hideStatus();
+  buildTL();
+  renderList();
+  renderDetail(0);
+  updateNow(0, 0);
+  updateTL(0, 0);
+
+  if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
+  else window._pendingVid = vid;
+}
+
+// [007] RENDER UI
+const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+
+function setStatus(type, msg) {
+  const el = document.getElementById('status');
+  el.className = `status ${type}`;
+  el.innerHTML = type === 'loading' ? `<span class="spinner">⟳</span>${msg}` : msg;
+}
+function hideStatus() { const el = document.getElementById('status'); el.style.display = 'none'; }
+function showOv(show) { document.getElementById('ov').classList.toggle('show', show); }
+function setOvStep(msg, pct) {
+  document.getElementById('ovStep').textContent = msg;
+  document.getElementById('ovFill').style.width = pct + '%';
+}
+
+function updateNow(t, i) {
+  if (!SECTIONS[i]) return;
+  const s = SECTIONS[i];
+  document.getElementById('nowDot').style.background = gd(s.type);
+  document.getElementById('nowName').textContent = `${s.id} · ${s.name}`;
+  document.getElementById('nowMeter').textContent = s.time_signature || '4/4';
+  document.getElementById('nowTime').textContent = fmt(t);
+}
+
+function buildTL() {
+  document.getElementById('timeline').innerHTML = SECTIONS.map((s, i) => {
+    const w = ((s.end - s.start) / TOTAL) * 100;
+    return `<div class="tl-seg" id="tls${i}" style="width:${w}%;background:${gc(s.type)}"
+      onclick="seekTo(${i})" title="${s.id} · ${s.name}">
+      <div class="tl-prog" id="tlp${i}" style="width:0%"></div>
+      <span>${s.id}</span>
+    </div>`;
+  }).join('');
+}
+
+function updateTL(t, cur) {
+  SECTIONS.forEach((s, i) => {
+    const prog = document.getElementById(`tlp${i}`);
+    const seg  = document.getElementById(`tls${i}`);
+    if (!prog || !seg) return;
+    if (i < cur) { prog.style.width = '100%'; seg.style.outline = 'none'; }
+    else if (i === cur) {
+      prog.style.width = Math.min(100, Math.max(0, ((t - s.start) / Math.max(1, s.end - s.start)) * 100)) + '%';
+      seg.style.outline = '2px solid var(--ac)'; seg.style.outlineOffset = '-1px'; seg.style.zIndex = '2';
+    } else { prog.style.width = '0%'; seg.style.outline = 'none'; seg.style.zIndex = '1'; }
+  });
+}
+
+function renderList() {
+  document.getElementById('secCount').textContent = `${currentSection + 1} / ${SECTIONS.length}`;
+  document.getElementById('slist').innerHTML = SECTIONS.map((s, i) =>
+    `<div class="si${i === currentSection ? ' active' : ''}" onclick="seekTo(${i})">
+      <span class="si-num">${s.id}</span>
+      <div class="si-dot" style="background:${gd(s.type)}"></div>
+      <span class="si-name">${s.name}</span>
+      <span class="si-time">${fmt(s.start)}</span>
+    </div>`
+  ).join('');
+  document.querySelector('.si.active')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function pp(p) { return `<div class="pp ${p ? 'pps' : 'ppw'}">${p ? '●' : '·'}</div>`; }
+
+function renderDetail(i) {
+  if (!SECTIONS[i]) return;
+  const s = SECTIONS[i];
+  const cols = Math.min(4, s.chords?.length || 1);
+  document.getElementById('detail').innerHTML = `
+    <div class="det-head">
+      <div class="det-title">${s.id}. ${s.name}</div>
+      <div class="det-meta">${fmt(s.start)} – ${fmt(s.end)} · ${Math.round(s.end - s.start)}s · ${s.key || '—'}</div>
+      <div class="det-badges">
+        <span class="db db-t">${s.time_signature || '4/4'}</span>
+        <span class="db db-k">${s.key || '—'}</span>
+        <span class="db db-f">${s.feel || '—'}</span>
+      </div>
+    </div>
+    <div class="det-body">
+      <div class="leg">
+        <div class="li"><div class="ld" style="background:var(--red)"></div>modal</div>
+        <div class="li"><div class="ld" style="background:var(--yel)"></div>mayor</div>
+        <div class="li"><div class="ld" style="background:var(--pur)"></div>tensión</div>
+        <div class="li"><div class="ld" style="background:var(--grn)"></div>resolución</div>
+        <div class="li"><div class="ld" style="background:var(--blu)"></div>jazz</div>
+      </div>
+      ${s.chords?.length ? `
+        <div>
+          <div class="sl">acordes</div>
+          <div class="cgrid" style="grid-template-columns:repeat(${cols},1fr)">
+            ${s.chords.map(c => `
+              <div class="cbox ${c.type || 'neutral'}">
+                <span class="cb2">${c.beats || ''}</span>
+                <div class="cn">${c.name || '—'}</div>
+                <div class="cs">${c.function || ''}${c.note ? ' · ' + c.note : ''}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+      ${s.rhythm_pattern?.length ? `
+        <div>
+          <div class="sl">ritmo</div>
+          <div class="rh-lbl">${s.rhythm_label || ''}</div>
+          <div class="rrow">${s.rhythm_pattern.map(pp).join('')}
+            <span class="rh-note">= 1 pulso</span>
+          </div>
+        </div>` : ''}
+      ${s.comment ? `<div class="cmt">${s.comment}</div>` : ''}
+      <div class="mcards">
+        ${s.harmony        ? `<div class="mc"><div class="l">armonía</div><div class="v">${s.harmony}</div></div>` : ''}
+        ${s.rhythm_analysis? `<div class="mc"><div class="l">rítmica</div><div class="v">${s.rhythm_analysis}</div></div>` : ''}
+        ${s.color          ? `<div class="mc"><div class="l">color</div><div class="v">${s.color}</div></div>` : ''}
+        ${s.voicings       ? `<div class="mc"><div class="l">voicings</div><div class="v">${s.voicings}</div></div>` : ''}
+      </div>
+    </div>`;
+}
+
+// [008] INICIALIZACIÓN
+document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalysis(); });
+</script>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
