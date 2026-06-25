@@ -1,17 +1,19 @@
 <!-- ============================================================
-     CONTEXTO: XX Analysis — analizador armónico/rítmico para
-     cualquier canción de YouTube usando Gemini API.
-     API key inyectada en deploy por GitHub Actions.
+     CONTEXTO: XX Analysis — Psicodélico Cósmico
+     Analizador armónico/rítmico con estética de aurora boreal,
+     wormholes y cosmos vibrante. Gemini API + YouTube sync.
      ============================================================
      ÍNDICE DE NAVEGACIÓN
      [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
-     [003] ESTRUCTURA HTML      - línea 290
-     [004] DATOS Y ESTADO       - línea 385
-     [005] YOUTUBE API          - línea 425
-     [006] GEMINI API           - línea 480
-     [007] RENDER UI            - línea 570
-     [008] INICIALIZACIÓN       - línea 670
+     [003] CANVAS AURORA        - línea 180
+     [004] ESTRUCTURA HTML      - línea 220
+     [005] DATOS Y ESTADO       - línea 340
+     [006] YOUTUBE API          - línea 390
+     [007] GEMINI API           - línea 445
+     [008] RENDER UI            - línea 545
+     [009] AURORA ANIMATION     - línea 650
+     [010] INICIALIZACIÓN       - línea 720
      ============================================================ -->
 <!DOCTYPE html>
 <html lang="es">
@@ -19,282 +21,430 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XX Analysis — Music Analyzer</title>
+<title>XX Analysis — Cosmic Music Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 
 <!-- [002] ESTILOS CSS -->
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  --bg:  #0a0a0b;
-  --s1:  #131315;
-  --s2:  #1a1a1d;
-  --s3:  #222226;
-  --bd:  rgba(255,255,255,0.07);
-  --bd2: rgba(255,255,255,0.13);
-  --tx:  #e2e0da;
-  --tx2: #7a7875;
-  --tx3: #3e3d3b;
-  --ac:  #c8a84b;
-  --ac2: rgba(200,168,75,0.12);
-  --ac3: rgba(200,168,75,0.3);
-  --red: #c84b4b; --pur: #9b4bc8; --grn: #4bc87a; --blu: #4b8ec8; --yel: #c8a84b;
-  --r: 6px; --rl: 10px;
-  --ff: 'Helvetica Neue', Arial, sans-serif;
-  --fs: 'Georgia', serif;
-  --fm: 'Courier New', monospace;
+  /* Paleta cósmica */
+  --void:    #03000a;
+  --deep:    #080514;
+  --surface: rgba(10,4,25,0.85);
+  --glass:   rgba(255,255,255,0.04);
+  --glass2:  rgba(255,255,255,0.08);
+
+  /* Auroras */
+  --cyan:    #00f5ff;
+  --magenta: #ff00e5;
+  --violet:  #8b00ff;
+  --aurora1: #00ffb3;
+  --aurora2: #ff006e;
+  --aurora3: #7700ff;
+  --aurora4: #00d4ff;
+  --gold:    #ffd700;
+  --nebula:  #ff4de0;
+
+  /* Texto */
+  --tx:  #e8f4ff;
+  --tx2: #7a9bb5;
+  --tx3: #3a4a5a;
+
+  /* Bordes */
+  --bd:  rgba(0,245,255,0.12);
+  --bd2: rgba(0,245,255,0.25);
+  --bd3: rgba(255,0,229,0.2);
+
+  --r:  8px;
+  --rl: 14px;
+  --ff: 'Exo 2', sans-serif;
+  --fo: 'Orbitron', monospace;
 }
-body { background: var(--bg); color: var(--tx); font-family: var(--ff); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+
+body {
+  background: var(--void);
+  color: var(--tx);
+  font-family: var(--ff);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* CANVAS FONDO */
+#cosmos {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+
+/* ESTRELLAS */
+.stars {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 60%, rgba(200,220,255,.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 80%, rgba(180,200,255,.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 85%, rgba(200,180,255,.6) 0%, transparent 100%),
+    radial-gradient(2px 2px at 80% 15%, rgba(255,240,200,.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 70%, rgba(255,255,255,.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 45%, rgba(180,255,240,.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255,200,255,.8) 0%, transparent 100%);
+  pointer-events: none;
+}
 
 /* LAYOUT */
-.app { max-width: 1080px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.app {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+
+/* GLASS PANEL */
+.glass {
+  background: var(--surface);
+  border: 0.5px solid var(--bd2);
+  border-radius: var(--rl);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 30px rgba(0,245,255,0.06), inset 0 0 20px rgba(0,0,0,0.3);
+}
+.glass-mag {
+  background: var(--surface);
+  border: 0.5px solid var(--bd3);
+  border-radius: var(--rl);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 30px rgba(255,0,229,0.06), inset 0 0 20px rgba(0,0,0,0.3);
+}
 
 /* HEADER */
-.hd { display: flex; justify-content: space-between; align-items: center; padding-bottom: .875rem; border-bottom: 0.5px solid var(--bd2); flex-wrap: wrap; gap: 8px; }
-.logo { font-family: var(--fs); font-size: 22px; color: var(--tx); letter-spacing: .01em; }
-.logo span { color: var(--ac); }
-.hd-sub { font-size: 11px; color: var(--tx2); margin-top: 2px; }
-.badge { font-size: 10px; padding: 3px 8px; border-radius: var(--r); border: 0.5px solid var(--ac3); background: var(--ac2); color: var(--ac); }
+.hd {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.25rem;
+  flex-wrap: wrap; gap: 8px;
+}
+.logo {
+  font-family: var(--fo);
+  font-size: 26px; font-weight: 900;
+  letter-spacing: .15em;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 50%, var(--violet) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(0,245,255,0.5));
+}
+.logo-sub {
+  font-size: 10px; color: var(--tx2); margin-top: 2px;
+  font-family: var(--fo); letter-spacing: .1em; font-weight: 400;
+}
+.cosmic-badge {
+  font-family: var(--fo); font-size: 9px; letter-spacing: .1em;
+  padding: 4px 10px; border-radius: var(--r);
+  border: 0.5px solid var(--bd2);
+  background: rgba(0,245,255,0.08);
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan);
+}
 
 /* INPUT PANEL */
-.input-panel { background: var(--s1); border: 0.5px solid var(--bd2); border-radius: var(--rl); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: .75rem; }
+.input-panel { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: .75rem; }
 .ip-row { display: flex; gap: 8px; align-items: center; }
-.ip-label { font-size: 11px; color: var(--tx2); white-space: nowrap; }
-.url-input { flex: 1; background: var(--bg); border: 0.5px solid var(--bd2); border-radius: var(--r); color: var(--tx); font-family: var(--fm); font-size: 12px; padding: 7px 10px; outline: none; transition: border-color .15s; }
-.url-input:focus { border-color: var(--ac3); }
+.url-input {
+  flex: 1; background: rgba(0,0,0,0.4);
+  border: 0.5px solid var(--bd2); border-radius: var(--r);
+  color: var(--cyan); font-family: var(--fo); font-size: 11px;
+  letter-spacing: .04em; padding: 9px 12px; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.url-input:focus {
+  border-color: var(--magenta);
+  box-shadow: 0 0 15px rgba(255,0,229,0.2), inset 0 0 10px rgba(255,0,229,0.05);
+}
 .url-input::placeholder { color: var(--tx3); }
-.btn { padding: 7px 18px; background: var(--ac); color: #000; border: none; border-radius: var(--r); cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; transition: opacity .15s; }
-.btn:hover { opacity: .85; }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-cosmic {
+  padding: 9px 20px; border: none; border-radius: var(--r); cursor: pointer;
+  font-family: var(--fo); font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  background: linear-gradient(135deg, var(--violet), var(--magenta));
+  color: #fff; white-space: nowrap;
+  box-shadow: 0 0 20px rgba(255,0,229,0.4);
+  transition: box-shadow .2s, transform .1s;
+}
+.btn-cosmic:hover { box-shadow: 0 0 30px rgba(255,0,229,0.7); transform: translateY(-1px); }
+.btn-cosmic:active { transform: translateY(0); }
+.btn-cosmic:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
 .hint { font-size: 10px; color: var(--tx3); font-style: italic; }
 
 /* STATUS */
-.status { font-size: 11px; padding: 6px 10px; border-radius: var(--r); display: none; }
-.status.loading { background: var(--ac2); color: var(--ac); border: 0.5px solid var(--ac3); display: block; }
-.status.error   { background: rgba(200,75,75,.12); color: #e07a7a; border: 0.5px solid rgba(200,75,75,.3); display: block; }
+.status { font-size: 11px; padding: 7px 12px; border-radius: var(--r); display: none; font-family: var(--fo); letter-spacing: .04em; }
+.status.loading { background: rgba(0,245,255,0.08); color: var(--cyan); border: 0.5px solid var(--bd2); display: block; }
+.status.error   { background: rgba(255,0,100,0.1); color: #ff6090; border: 0.5px solid rgba(255,0,100,0.3); display: block; }
 .spinner { display: inline-block; animation: spin 1s linear infinite; margin-right: 5px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* MAIN GRID */
-.main { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; }
+/* MAIN */
+.main { display: grid; grid-template-columns: 1fr 290px; gap: 1rem; }
 .left { display: flex; flex-direction: column; gap: .875rem; }
 
 /* VIDEO */
-.video-wrap { position: relative; width: 100%; padding-top: 56.25%; background: var(--s2); border-radius: var(--rl); overflow: hidden; border: 0.5px solid var(--bd); }
+.video-wrap {
+  position: relative; width: 100%; padding-top: 56.25%;
+  background: rgba(0,0,0,0.6); border-radius: var(--rl); overflow: hidden;
+  border: 0.5px solid var(--bd2);
+  box-shadow: 0 0 40px rgba(0,245,255,0.1);
+}
 .video-wrap > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
-.vph { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--tx3); font-size: 12px; }
-.vph .big { font-size: 40px; }
+.vph { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--tx3); }
+.vph .big { font-size: 48px; filter: drop-shadow(0 0 10px var(--cyan)); }
+.vph span { font-family: var(--fo); font-size: 11px; letter-spacing: .08em; color: var(--tx2); }
 
 /* NOW BAR */
-.now-bar { background: var(--s1); border: 0.5px solid var(--bd); border-radius: var(--r); padding: .625rem .875rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 40px; }
-.now-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--tx3); flex-shrink: 0; transition: background .3s; }
-.now-lbl  { font-size: 10px; color: var(--tx3); }
-.now-name { font-size: 13px; color: var(--ac); font-weight: 500; flex: 1; }
-.now-m    { font-size: 10px; padding: 2px 6px; background: var(--ac2); color: var(--ac); border: 0.5px solid var(--ac3); border-radius: var(--r); }
-.now-t    { font-family: var(--fm); font-size: 11px; color: var(--tx2); }
+.now-bar {
+  padding: .625rem 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 44px;
+}
+.now-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .3s; box-shadow: 0 0 8px currentColor; }
+.now-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; }
+.now-name { font-family: var(--fo); font-size: 12px; color: var(--cyan); font-weight: 700; flex: 1; text-shadow: 0 0 10px rgba(0,245,255,.5); letter-spacing: .04em; }
+.now-m    { font-family: var(--fo); font-size: 9px; padding: 2px 7px; border-radius: var(--r); border: 0.5px solid var(--magenta); background: rgba(255,0,229,0.1); color: var(--magenta); letter-spacing: .06em; text-shadow: 0 0 8px var(--magenta); }
+.now-t    { font-family: var(--fo); font-size: 12px; color: var(--aurora1); text-shadow: 0 0 8px var(--aurora1); }
 
 /* TIMELINE */
-.tl-lbl  { font-size: 10px; color: var(--tx3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; }
-.timeline { display: flex; height: 26px; border-radius: var(--r); overflow: hidden; gap: 1px; background: var(--bd); }
-.tl-seg  { display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: rgba(255,255,255,.3); cursor: pointer; position: relative; overflow: hidden; transition: filter .15s; flex-shrink: 0; }
-.tl-seg:hover { filter: brightness(1.6); }
-.tl-seg.active { outline: 2px solid var(--ac); outline-offset: -1px; z-index: 2; color: var(--ac); }
-.tl-prog { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,.16); pointer-events: none; }
+.tl-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+.timeline { display: flex; height: 28px; border-radius: var(--r); overflow: hidden; gap: 1px; background: rgba(0,0,0,.5); box-shadow: 0 0 15px rgba(0,245,255,0.08); }
+.tl-seg  { display: flex; align-items: center; justify-content: center; font-family: var(--fo); font-size: 8px; font-weight: 700; color: rgba(255,255,255,.25); cursor: pointer; position: relative; overflow: hidden; transition: filter .2s; flex-shrink: 0; }
+.tl-seg:hover { filter: brightness(1.8) saturate(1.5); }
+.tl-seg.active { outline: 1.5px solid var(--cyan); outline-offset: -1px; z-index: 2; color: var(--cyan); text-shadow: 0 0 6px var(--cyan); }
+.tl-prog { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,0.2); pointer-events: none; }
 
 /* DETAIL */
-.detail { background: var(--s1); border: 0.5px solid var(--bd); border-radius: var(--rl); overflow: hidden; }
-.det-empty { padding: 2rem; text-align: center; color: var(--tx3); font-size: 12px; font-style: italic; line-height: 1.8; }
-.det-head { background: var(--s2); padding: .75rem 1rem; border-bottom: 0.5px solid var(--bd); }
-.det-title { font-family: var(--fs); font-size: 16px; font-weight: 400; }
-.det-meta  { font-size: 11px; color: var(--tx2); margin-top: 2px; }
-.det-badges { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
-.db   { font-size: 10px; padding: 2px 6px; border-radius: var(--r); border: 0.5px solid; }
-.db-t { background: rgba(75,142,200,.1); color: #7ab4e0; border-color: rgba(75,142,200,.2); }
-.db-k { background: rgba(200,168,75,.1);  color: #d4af5a; border-color: rgba(200,168,75,.2); }
-.db-f { background: rgba(75,200,122,.1);  color: #5dd491; border-color: rgba(75,200,122,.2); }
-.det-body { padding: .875rem 1rem; display: flex; flex-direction: column; gap: .75rem; }
+.detail { overflow: hidden; }
+.det-empty { padding: 2.5rem; text-align: center; color: var(--tx3); font-family: var(--fo); font-size: 11px; letter-spacing: .06em; line-height: 2; }
+.det-head { padding: .875rem 1.125rem; border-bottom: 0.5px solid var(--bd); }
+.det-title { font-family: var(--fo); font-size: 15px; font-weight: 700; letter-spacing: .05em; background: linear-gradient(90deg, var(--cyan), var(--aurora1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.det-meta  { font-size: 11px; color: var(--tx2); margin-top: 3px; font-family: var(--fo); letter-spacing: .04em; }
+.det-badges { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+.db { font-family: var(--fo); font-size: 9px; padding: 2px 7px; border-radius: var(--r); border: 0.5px solid; letter-spacing: .06em; }
+.db-t { background: rgba(0,212,255,0.1); color: var(--aurora4); border-color: rgba(0,212,255,0.3); }
+.db-k { background: rgba(255,215,0,0.1);  color: var(--gold);   border-color: rgba(255,215,0,0.3); text-shadow: 0 0 6px var(--gold); }
+.db-f { background: rgba(0,255,179,0.1);  color: var(--aurora1); border-color: rgba(0,255,179,0.3); }
+.det-body { padding: .875rem 1.125rem; display: flex; flex-direction: column; gap: .875rem; }
 
 /* CHORDS */
-.sl { font-size: 10px; color: var(--tx3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-.sl::after { content: ''; flex: 1; height: 0.5px; background: var(--bd2); }
-.cgrid { display: grid; gap: 4px; }
-.cbox { border: 0.5px solid var(--bd2); border-left: 2px solid var(--tx3); border-radius: var(--r); padding: 6px 8px; min-height: 44px; position: relative; background: var(--bg); }
-.cbox.modal   { border-left-color: var(--red); }
-.cbox.tension { border-left-color: var(--pur); }
-.cbox.resolve { border-left-color: var(--grn); }
-.cbox.jazz    { border-left-color: var(--blu); }
-.cbox.bright  { border-left-color: var(--yel); }
+.sl { font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.sl::after { content: ''; flex: 1; height: 0.5px; background: linear-gradient(90deg, var(--bd2), transparent); }
+.cgrid { display: grid; gap: 5px; }
+.cbox {
+  border: 0.5px solid rgba(255,255,255,0.08); border-left: 2px solid;
+  border-radius: var(--r); padding: 7px 9px; min-height: 48px;
+  position: relative; background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(5px); transition: box-shadow .2s;
+}
+.cbox:hover { box-shadow: 0 0 12px rgba(0,245,255,0.15); }
+.cbox.modal   { border-left-color: var(--magenta); }
+.cbox.tension { border-left-color: var(--violet); }
+.cbox.resolve { border-left-color: var(--aurora1); }
+.cbox.jazz    { border-left-color: var(--aurora4); }
+.cbox.bright  { border-left-color: var(--gold); }
 .cbox.neutral { border-left-color: var(--tx3); }
-.cn  { font-family: var(--fs); font-size: 14px; }
-.cs  { font-size: 9px; color: var(--tx2); margin-top: 1px; }
-.cb2 { position: absolute; top: 4px; right: 6px; font-size: 9px; color: var(--tx3); }
+.cn  { font-family: var(--fo); font-size: 15px; font-weight: 700; color: var(--tx); text-shadow: 0 0 8px rgba(0,245,255,0.3); }
+.cs  { font-size: 9px; color: var(--tx2); margin-top: 2px; font-family: var(--fo); letter-spacing: .04em; }
+.cb2 { position: absolute; top: 5px; right: 7px; font-size: 9px; color: var(--tx3); font-family: var(--fo); }
 
 /* RHYTHM */
-.rh-lbl { font-size: 10px; color: var(--tx2); margin-bottom: 4px; }
-.rrow   { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; }
-.pp  { width: 20px; height: 20px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
-.pps { background: var(--tx); color: var(--bg); }
-.ppw { background: var(--s3); color: var(--tx3); border: 0.5px solid var(--bd2); }
-.rh-note { font-size: 9px; color: var(--tx3); margin-left: 5px; }
+.rh-lbl { font-size: 10px; color: var(--tx2); margin-bottom: 5px; font-family: var(--fo); letter-spacing: .04em; }
+.rrow { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+.pp  { width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; transition: box-shadow .2s; }
+.pps { background: linear-gradient(135deg, var(--cyan), var(--aurora1)); color: #000; box-shadow: 0 0 8px rgba(0,245,255,0.5); font-weight: 700; }
+.ppw { background: rgba(255,255,255,0.04); color: var(--tx3); border: 0.5px solid rgba(255,255,255,0.08); }
+.rh-note { font-size: 9px; color: var(--tx3); margin-left: 6px; font-family: var(--fo); letter-spacing: .04em; }
 
-/* COMMENT + CARDS */
-.cmt  { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.6; padding-left: 10px; border-left: 2px solid var(--ac); }
-.mcards { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.mc   { background: var(--s2); border-radius: var(--r); padding: 7px 9px; }
-.mc .l { font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+/* COMMENT */
+.cmt { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.7; padding-left: 12px; border-left: 2px solid; border-image: linear-gradient(to bottom, var(--cyan), var(--magenta)) 1; }
+
+/* MINI CARDS */
+.mcards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mc { background: rgba(0,0,0,0.3); border: 0.5px solid var(--bd); border-radius: var(--r); padding: 8px 10px; }
+.mc .l { font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
 .mc .v { font-size: 10px; color: var(--tx2); line-height: 1.5; }
 
 /* LEGEND */
 .leg { display: flex; gap: 8px; flex-wrap: wrap; }
-.li  { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--tx3); }
-.ld  { width: 7px; height: 7px; border-radius: 1px; }
+.li  { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--tx3); font-family: var(--fo); letter-spacing: .04em; }
+.ld  { width: 8px; height: 8px; border-radius: 2px; }
 
 /* RIGHT PANEL */
-.right { background: var(--s1); border: 0.5px solid var(--bd); border-radius: var(--rl); overflow: hidden; display: flex; flex-direction: column; }
-.rh-hdr { padding: .625rem .875rem; border-bottom: 0.5px solid var(--bd); font-size: 10px; color: var(--tx3); text-transform: uppercase; letter-spacing: .07em; display: flex; justify-content: space-between; }
-.rh-hdr span { font-size: 11px; color: var(--tx2); text-transform: none; letter-spacing: 0; }
-.slist { overflow-y: auto; flex: 1; max-height: 640px; }
-.slist-empty { padding: 1.5rem; text-align: center; color: var(--tx3); font-size: 11px; font-style: italic; line-height: 1.8; }
-.si { display: flex; align-items: center; gap: 7px; padding: .5rem .875rem; cursor: pointer; border-bottom: 0.5px solid var(--bd); transition: background .1s; }
+.right { display: flex; flex-direction: column; overflow: hidden; }
+.rh-hdr { padding: .75rem 1rem; border-bottom: 0.5px solid var(--bd); font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .1em; display: flex; justify-content: space-between; align-items: center; }
+.rh-hdr span { font-size: 11px; color: var(--cyan); text-transform: none; letter-spacing: 0; text-shadow: 0 0 8px rgba(0,245,255,.4); }
+.slist { overflow-y: auto; flex: 1; max-height: 620px; }
+.slist::-webkit-scrollbar { width: 3px; }
+.slist::-webkit-scrollbar-track { background: transparent; }
+.slist::-webkit-scrollbar-thumb { background: var(--violet); border-radius: 2px; }
+.slist-empty { padding: 2rem; text-align: center; color: var(--tx3); font-family: var(--fo); font-size: 10px; letter-spacing: .06em; line-height: 2; }
+.si { display: flex; align-items: center; gap: 7px; padding: .5rem 1rem; cursor: pointer; border-bottom: 0.5px solid var(--bd); transition: background .15s, border-color .15s; }
 .si:last-child { border-bottom: none; }
-.si:hover { background: var(--s2); }
-.si.active { background: var(--ac2); border-left: 2px solid var(--ac); padding-left: calc(.875rem - 2px); }
-.si-num  { font-family: var(--fm); font-size: 10px; color: var(--tx3); min-width: 22px; }
-.si-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.si:hover { background: rgba(0,245,255,0.04); }
+.si.active { background: rgba(0,245,255,0.07); border-left: 2px solid var(--cyan); padding-left: calc(1rem - 2px); }
+.si-num  { font-family: var(--fo); font-size: 9px; color: var(--tx3); min-width: 22px; letter-spacing: .04em; }
+.si-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 5px currentColor; }
 .si-name { font-size: 11px; color: var(--tx); flex: 1; }
-.si-time { font-family: var(--fm); font-size: 10px; color: var(--tx3); }
+.si-time { font-family: var(--fo); font-size: 9px; color: var(--tx3); }
 
-/* SYNC OFFSET */
-.sync-bar { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--tx2); }
-.sync-bar input[type=range] { flex: 1; accent-color: var(--ac); }
-.sync-val { font-family: var(--fm); font-size: 11px; color: var(--ac); min-width: 38px; }
-.sync-bar button { padding: 3px 8px; background: transparent; border: 0.5px solid var(--bd2); border-radius: var(--r); color: var(--tx2); cursor: pointer; font-size: 10px; }
-.sync-bar button:hover { background: var(--s2); }
+/* SYNC BAR */
+.sync-bar { display: flex; align-items: center; gap: 8px; font-family: var(--fo); font-size: 10px; color: var(--tx3); letter-spacing: .04em; }
+.sync-bar input[type=range] { flex: 1; accent-color: var(--magenta); }
+.sync-val { font-size: 10px; color: var(--magenta); min-width: 38px; text-shadow: 0 0 6px var(--magenta); }
+.sync-bar button { padding: 3px 8px; background: transparent; border: 0.5px solid var(--bd); border-radius: var(--r); color: var(--tx3); cursor: pointer; font-family: var(--fo); font-size: 9px; letter-spacing: .06em; transition: border-color .15s; }
+.sync-bar button:hover { border-color: var(--magenta); color: var(--magenta); }
 
-.footer { font-size: 10px; color: var(--tx3); font-style: italic; padding-top: .5rem; border-top: 0.5px solid var(--bd); }
+.footer { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .06em; padding-top: .5rem; text-align: center; }
 
-/* ANALYZING OVERLAY */
-.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; align-items: center; justify-content: center; }
+/* OVERLAY ANALYZING */
+.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 .ov.show { display: flex; }
-.ov-box { background: var(--s1); border: 0.5px solid var(--bd2); border-radius: var(--rl); padding: 2rem 2.5rem; text-align: center; max-width: 380px; width: 90%; }
-.ov-title { font-family: var(--fs); font-size: 18px; margin-bottom: 6px; }
+.ov-box { background: rgba(8,5,20,0.95); border: 0.5px solid var(--bd2); border-radius: var(--rl); padding: 2.5rem 3rem; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 0 60px rgba(0,245,255,0.2), 0 0 120px rgba(255,0,229,0.1); }
+.ov-icon { font-size: 40px; margin-bottom: .75rem; animation: pulse-glow 2s ease-in-out infinite; }
+@keyframes pulse-glow { 0%,100%{filter:drop-shadow(0 0 10px var(--cyan))} 50%{filter:drop-shadow(0 0 25px var(--magenta))} }
+.ov-title { font-family: var(--fo); font-size: 16px; font-weight: 700; letter-spacing: .1em; background: linear-gradient(90deg, var(--cyan), var(--magenta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
 .ov-sub   { font-size: 11px; color: var(--tx2); line-height: 1.6; }
-.ov-bar   { margin-top: 16px; height: 3px; background: var(--s3); border-radius: 2px; overflow: hidden; }
-.ov-fill  { height: 100%; background: var(--ac); border-radius: 2px; width: 0%; transition: width .4s; }
-.ov-step  { font-size: 11px; color: var(--ac); margin-top: 8px; font-family: var(--fm); }
+.ov-bar   { margin-top: 18px; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.ov-fill  { height: 100%; border-radius: 2px; width: 0%; transition: width .4s; background: linear-gradient(90deg, var(--violet), var(--magenta), var(--cyan)); }
+.ov-step  { font-family: var(--fo); font-size: 10px; color: var(--cyan); margin-top: 10px; letter-spacing: .06em; text-shadow: 0 0 8px var(--cyan); }
+
+/* Wormhole spinner */
+.wormhole { width: 60px; height: 60px; margin: 0 auto 1rem; position: relative; }
+.wormhole::before, .wormhole::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid transparent;
+}
+.wormhole::before { border-top-color: var(--cyan); border-right-color: var(--magenta); animation: worm 1.2s linear infinite; }
+.wormhole::after  { border-bottom-color: var(--violet); border-left-color: var(--aurora1); animation: worm 0.8s linear infinite reverse; inset: 8px; }
+@keyframes worm { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<!-- [003] ESTRUCTURA HTML -->
+<div class="stars"></div>
+<canvas id="cosmos"></canvas>
+
+<!-- [003] OVERLAY -->
 <div class="ov" id="ov">
   <div class="ov-box">
-    <div class="ov-title">Analizando canción</div>
-    <div class="ov-sub">Gemini está analizando la estructura armónica y rítmica...</div>
+    <div class="wormhole"></div>
+    <div class="ov-title">SCANNING THE COSMOS</div>
+    <div class="ov-sub" id="ovSub">Gemini está analizando la estructura armónica y rítmica de la canción...</div>
     <div class="ov-bar"><div class="ov-fill" id="ovFill"></div></div>
-    <div class="ov-step" id="ovStep">Iniciando...</div>
+    <div class="ov-step" id="ovStep">INICIANDO SECUENCIA...</div>
   </div>
 </div>
 
+<!-- [004] ESTRUCTURA HTML -->
 <div class="app">
 
-  <div class="hd">
+  <!-- HEADER -->
+  <div class="glass hd">
     <div>
-      <div class="logo">XX <span>Analysis</span></div>
-      <div class="hd-sub">Análisis armónico · rítmico · sincronizado con YouTube</div>
+      <div class="logo">XX ANALYSIS</div>
+      <div class="logo-sub">COSMIC MUSIC ANALYZER · ARMÓNICO · RÍTMICO · SINCRONIZADO</div>
     </div>
-    <span class="badge">Gemini API</span>
+    <span class="cosmic-badge">GEMINI AI · YOUTUBE SYNC</span>
   </div>
 
-  <div class="input-panel">
+  <!-- INPUT -->
+  <div class="glass input-panel">
     <div class="ip-row">
-      <span class="ip-label">YouTube URL:</span>
       <input type="text" class="url-input" id="ytUrl"
-        placeholder="https://www.youtube.com/watch?v=..."
+        placeholder="PASTE YOUTUBE URL HERE..."
         autocomplete="off">
-      <button class="btn" id="btnAnalyze" onclick="startAnalysis()">Analizar</button>
+      <button class="btn-cosmic" id="btnAnalyze" onclick="startAnalysis()">⟁ ANALIZAR</button>
     </div>
-    <div class="hint">Pegá cualquier URL de YouTube · Enter para analizar · El análisis puede tardar 10-20 segundos</div>
+    <div class="hint">Pegá cualquier URL de YouTube y presioná Enter o el botón · El análisis tarda 10-20 segundos</div>
     <div class="status" id="status"></div>
   </div>
 
+  <!-- MAIN -->
   <div class="main" id="mainGrid" style="display:none">
     <div class="left">
 
+      <!-- VIDEO -->
       <div class="video-wrap">
         <div id="ytPlayer">
           <div class="vph">
-            <div class="big">▶</div>
-            <div>El video cargará aquí</div>
+            <div class="big">◈</div>
+            <span>EL VIDEO CARGARÁ AQUÍ</span>
           </div>
         </div>
       </div>
 
-      <div class="sync-bar">
-        <span>Sync offset:</span>
+      <!-- SYNC -->
+      <div class="glass sync-bar" style="padding:.625rem 1rem">
+        <span>SYNC OFFSET:</span>
         <input type="range" id="offsetSlider" min="-15" max="15" step="0.5" value="0"
           oninput="updateOffset(this.value)">
         <span class="sync-val" id="offsetVal">0.0s</span>
-        <button onclick="resetOffset()">Reset</button>
+        <button onclick="resetOffset()">RESET</button>
       </div>
 
-      <div class="now-bar">
-        <div class="now-dot" id="nowDot"></div>
-        <span class="now-lbl">ahora:</span>
-        <span class="now-name" id="nowName">—</span>
+      <!-- NOW BAR -->
+      <div class="glass now-bar">
+        <div class="now-dot" id="nowDot" style="background:var(--tx3)"></div>
+        <span class="now-lbl">NOW:</span>
+        <span class="now-name" id="nowName">— ESPERANDO ANÁLISIS —</span>
         <span class="now-m" id="nowMeter">—</span>
         <span class="now-t" id="nowTime">0:00</span>
       </div>
 
+      <!-- TIMELINE -->
       <div>
-        <div class="tl-lbl">mapa de secciones · click para saltar</div>
+        <div class="tl-lbl">▸ MAPA DE SECCIONES · CLICK PARA SALTAR</div>
         <div class="timeline" id="timeline"></div>
       </div>
 
-      <div class="detail" id="detail">
-        <div class="det-empty">Analizá una canción para ver el análisis sección por sección</div>
+      <!-- DETAIL -->
+      <div class="glass detail" id="detail">
+        <div class="det-empty">◈<br><br>ANALIZÁ UNA CANCIÓN<br>PARA VER EL ANÁLISIS<br>SECCIÓN POR SECCIÓN</div>
       </div>
 
     </div>
 
-    <div class="right">
-      <div class="rh-hdr">secciones <span id="secCount">—</span></div>
+    <!-- RIGHT PANEL -->
+    <div class="glass-mag right">
+      <div class="rh-hdr">SECCIONES <span id="secCount">—</span></div>
       <div class="slist" id="slist">
-        <div class="slist-empty">Pegá una URL de YouTube<br>y hacé click en Analizar</div>
+        <div class="slist-empty">PEGÁ UNA URL DE YOUTUBE<br>Y HACÉ CLICK EN<br>⟁ ANALIZAR</div>
       </div>
     </div>
   </div>
 
-  <div class="footer">XX Analysis · Gemini API · análisis armónico-rítmico en tiempo real · github.com/Vic919wasp/xx-analysis</div>
+  <div class="footer">XX ANALYSIS · POWERED BY GEMINI AI · GITHUB.COM/VIC919WASP/XX-ANALISIS</div>
 </div>
 
-<!-- [004] DATOS Y ESTADO -->
+<!-- [005] DATOS Y ESTADO -->
 <script>
-// API key inyectada por GitHub Actions al hacer deploy
 const GEMINI_KEY = '__GEMINI_API_KEY__';
 
-let SECTIONS = [];
-let TOTAL = 0;
-let currentSection = 0;
-let ytPlayer = null;
-let syncInterval = null;
-let offsetSecs = 0;
+let SECTIONS = [], TOTAL = 0, currentSection = 0;
+let ytPlayer = null, syncInterval = null, offsetSecs = 0;
 
-const COLORS = {
-  intro:'#252525', riff:'#2a1515', verse:'#151822', estrofa:'#151822',
-  'pre-coro':'#1a1525', precoro:'#1a1525', chorus:'#152018', coro:'#152018',
-  bridge:'#252015', puente:'#252015', instrumental:'#1a2022', solo:'#152018',
-  break:'#221515', climax:'#251a15', outro:'#1a1a1a'
+// Colores cósmicos por tipo de sección
+const SCOL = {
+  intro:        ['#1a0a2e','#8b00ff'], riff:         ['#2a0a0a','#ff003c'],
+  verse:        ['#0a0a2a','#0066ff'], estrofa:      ['#0a0a2a','#0066ff'],
+  'pre-coro':   ['#1a0a2a','#cc00ff'], precoro:      ['#1a0a2a','#cc00ff'],
+  chorus:       ['#0a1a0a','#00ff88'], coro:         ['#0a1a0a','#00ff88'],
+  bridge:       ['#1a1a0a','#ffcc00'], puente:       ['#1a1a0a','#ffcc00'],
+  instrumental: ['#0a1a1a','#00ccff'], solo:         ['#0a1a0a','#00ff44'],
+  break:        ['#2a0a0a','#ff0066'], climax:       ['#2a0a15','#ff6600'],
+  outro:        ['#0f0f15','#444466'],
 };
-const DOTS = {
-  intro:'#666', riff:'#c84b4b', verse:'#4b8ec8', estrofa:'#4b8ec8',
-  'pre-coro':'#9b4bc8', precoro:'#9b4bc8', chorus:'#4bc87a', coro:'#4bc87a',
-  bridge:'#c8a84b', puente:'#c8a84b', instrumental:'#4b8ec8', solo:'#4bc87a',
-  break:'#c84b4b', climax:'#c84b4b', outro:'#555'
-};
-const gc = t => COLORS[t?.toLowerCase()] || '#1e1e1e';
-const gd = t => DOTS[t?.toLowerCase()]   || '#888';
+const gc = t => (SCOL[t?.toLowerCase()] || ['#111','#555'])[0];
+const gd = t => (SCOL[t?.toLowerCase()] || ['#111','#555'])[1];
 
-// [005] YOUTUBE API
+// [006] YOUTUBE API
 function extractId(url) {
   const pp = [/[?&]v=([^&#]+)/, /youtu\.be\/([^?&#]+)/, /embed\/([^?&#]+)/, /shorts\/([^?&#]+)/];
   for (const p of pp) { const m = url.match(p); if (m) return m[1]; }
@@ -306,7 +456,7 @@ function onYouTubeIframeAPIReady() {
 }
 
 function createPlayer(vid) {
-  if (ytPlayer && typeof ytPlayer.destroy === 'function') ytPlayer.destroy();
+  if (ytPlayer?.destroy) ytPlayer.destroy();
   ytPlayer = new YT.Player('ytPlayer', {
     height: '100%', width: '100%', videoId: vid,
     playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1 },
@@ -314,7 +464,7 @@ function createPlayer(vid) {
       onStateChange: e => {
         if (e.data === YT.PlayerState.PLAYING) startSync(); else stopSync();
       },
-      onError: () => setStatus('error', 'YouTube bloqueó el video. Desactivá Shields en Brave para esta página (ícono del león en la barra de dirección).')
+      onError: () => setStatus('error', '⚠ YouTube bloqueó el video. Desactivá Shields en Brave (ícono del león) para esta página.')
     }
   });
 }
@@ -337,24 +487,21 @@ function seekTo(i) {
   if (ytPlayer?.seekTo) { ytPlayer.seekTo(t, true); ytPlayer.playVideo(); }
   currentSection = i; renderDetail(i); renderList();
 }
-
 function getSectionAt(t) {
   for (let i = SECTIONS.length - 1; i >= 0; i--) if (t >= SECTIONS[i].start) return i;
   return 0;
 }
-
 function updateOffset(v) { offsetSecs = parseFloat(v); document.getElementById('offsetVal').textContent = parseFloat(v).toFixed(1) + 's'; }
-function resetOffset() { offsetSecs = 0; document.getElementById('offsetSlider').value = 0; document.getElementById('offsetVal').textContent = '0.0s'; }
+function resetOffset()   { offsetSecs = 0; document.getElementById('offsetSlider').value = 0; document.getElementById('offsetVal').textContent = '0.0s'; }
 
-// [006] GEMINI API
+// [007] GEMINI API
 async function startAnalysis() {
   const url = document.getElementById('ytUrl').value.trim();
-  if (!url) return setStatus('error', 'Ingresá una URL de YouTube.');
-
+  if (!url) return setStatus('error', '⚠ Ingresá una URL de YouTube.');
   const vid = extractId(url);
-  if (!vid) return setStatus('error', 'URL inválida. Usá una URL de youtube.com o youtu.be');
+  if (!vid) return setStatus('error', '⚠ URL inválida. Usá una URL de youtube.com o youtu.be');
 
-  showOv(true); setOvStep('Preparando análisis...', 10);
+  showOv(true); setOvStep('ESCANEANDO EL UNIVERSO MUSICAL...', 10);
 
   const prompt = `Eres un experto en teoría musical, armonía jazz, análisis rítmico y prog metal.
 
@@ -383,37 +530,29 @@ Respondé ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, s
       "feel": "oscuro / pesado",
       "bpm": 120,
       "chords": [
-        {
-          "name": "Em7",
-          "function": "i7",
-          "beats": "2",
-          "type": "modal",
-          "note": "tónica"
-        }
+        { "name": "Em7", "function": "i7", "beats": "2", "type": "modal", "note": "tónica" }
       ],
       "rhythm_pattern": [1,0,1,0,1,0,1,0],
       "rhythm_label": "4/4 · negras · palm mute",
-      "comment": "Descripción musical de 2-3 oraciones sobre esta sección.",
-      "harmony": "Análisis armónico detallado: modo, función tonal, movimientos no diatónicos.",
-      "rhythm_analysis": "Análisis rítmico: agrupamiento, cambios de métrica, groove.",
-      "color": "Color sonoro, concepto, influencias musicales.",
-      "voicings": "Voicings específicos, instrumentación, técnicas."
+      "comment": "Descripción musical de 2-3 oraciones.",
+      "harmony": "Análisis armónico detallado.",
+      "rhythm_analysis": "Análisis rítmico detallado.",
+      "color": "Color sonoro, concepto, influencias.",
+      "voicings": "Voicings específicos e instrumentación."
     }
   ]
 }
 
-Reglas importantes:
-- chord "type" debe ser exactamente: modal, tension, resolve, jazz, bright, o neutral
-- rhythm_pattern: array de 0s y 1s (8-24 elementos), 1 = pulso fuerte
-- start y end en segundos reales aproximados
-- Identificá TODAS las secciones, incluyendo repeticiones (Estrofa 1, Estrofa 2, etc.)
-- Analizá influencias jazzísticas, modales, cromáticas cuando las haya
-- Sé específico: Em7 en vez de Em, ♭VII en vez de "séptimo grado", etc.
-- Si hay cambios de métrica, indicalos en time_signature (ej: "4/4 → 7/8")`;
+Reglas:
+- chord type: modal, tension, resolve, jazz, bright, o neutral
+- rhythm_pattern: array de 0s y 1s (8-24 elementos)
+- start/end en segundos reales aproximados
+- Identificá TODAS las secciones incluyendo repeticiones
+- Sé específico: Em7 en vez de Em, ♭VII en vez de "séptimo grado"
+- Si hay cambios de métrica indicalos: "4/4 → 7/8"`;
 
   try {
-    setOvStep('Consultando Gemini...', 30);
-
+    setOvStep('TRANSMITIENDO A GEMINI...', 30);
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
@@ -425,32 +564,21 @@ Reglas importantes:
         })
       }
     );
-
-    setOvStep('Recibiendo análisis...', 60);
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
-
+    setOvStep('RECIBIENDO SEÑAL CÓSMICA...', 60);
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
     const data = await res.json();
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    setOvStep('Procesando secciones...', 80);
-
+    setOvStep('DECODIFICANDO FRECUENCIAS...', 80);
     const clean = raw.replace(/```json|```/g, '').trim();
     const analysis = JSON.parse(clean);
-
-    if (!analysis.sections?.length) throw new Error('Gemini no devolvió secciones. Probá con otra URL.');
-
-    setOvStep('Construyendo player...', 95);
+    if (!analysis.sections?.length) throw new Error('Sin secciones en el análisis. Probá con otra URL.');
+    setOvStep('MATERIALIZANDO ANÁLISIS...', 95);
     loadAnalysis(analysis, vid);
-    setOvStep('¡Listo!', 100);
-    setTimeout(() => showOv(false), 500);
-
+    setOvStep('✦ ANÁLISIS COMPLETO ✦', 100);
+    setTimeout(() => showOv(false), 600);
   } catch (err) {
     showOv(false);
-    setStatus('error', `Error: ${err.message}`);
+    setStatus('error', `⚠ ${err.message}`);
   }
 }
 
@@ -458,38 +586,30 @@ function loadAnalysis(data, vid) {
   SECTIONS = data.sections;
   TOTAL = data.total_duration || SECTIONS[SECTIONS.length - 1]?.end || 300;
   currentSection = 0;
-
   document.getElementById('mainGrid').style.display = 'grid';
   hideStatus();
-  buildTL();
-  renderList();
-  renderDetail(0);
-  updateNow(0, 0);
-  updateTL(0, 0);
-
+  buildTL(); renderList(); renderDetail(0); updateNow(0, 0); updateTL(0, 0);
   if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
   else window._pendingVid = vid;
 }
 
-// [007] RENDER UI
+// [008] RENDER UI
 const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-
-function setStatus(type, msg) {
+function setStatus(t, m) {
   const el = document.getElementById('status');
-  el.className = `status ${type}`;
-  el.innerHTML = type === 'loading' ? `<span class="spinner">⟳</span>${msg}` : msg;
+  el.className = `status ${t}`;
+  el.innerHTML = t === 'loading' ? `<span class="spinner">⟳</span>${m}` : m;
 }
-function hideStatus() { const el = document.getElementById('status'); el.style.display = 'none'; }
-function showOv(show) { document.getElementById('ov').classList.toggle('show', show); }
-function setOvStep(msg, pct) {
-  document.getElementById('ovStep').textContent = msg;
-  document.getElementById('ovFill').style.width = pct + '%';
-}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+function showOv(s) { document.getElementById('ov').classList.toggle('show', s); }
+function setOvStep(m, p) { document.getElementById('ovStep').textContent = m; document.getElementById('ovFill').style.width = p + '%'; }
 
 function updateNow(t, i) {
   if (!SECTIONS[i]) return;
   const s = SECTIONS[i];
-  document.getElementById('nowDot').style.background = gd(s.type);
+  const dot = document.getElementById('nowDot');
+  dot.style.background = gd(s.type);
+  dot.style.color = gd(s.type);
   document.getElementById('nowName').textContent = `${s.id} · ${s.name}`;
   document.getElementById('nowMeter').textContent = s.time_signature || '4/4';
   document.getElementById('nowTime').textContent = fmt(t);
@@ -498,7 +618,8 @@ function updateNow(t, i) {
 function buildTL() {
   document.getElementById('timeline').innerHTML = SECTIONS.map((s, i) => {
     const w = ((s.end - s.start) / TOTAL) * 100;
-    return `<div class="tl-seg" id="tls${i}" style="width:${w}%;background:${gc(s.type)}"
+    const bg = gc(s.type);
+    return `<div class="tl-seg" id="tls${i}" style="width:${w}%;background:${bg}"
       onclick="seekTo(${i})" title="${s.id} · ${s.name}">
       <div class="tl-prog" id="tlp${i}" style="width:0%"></div>
       <span>${s.id}</span>
@@ -514,7 +635,7 @@ function updateTL(t, cur) {
     if (i < cur) { prog.style.width = '100%'; seg.style.outline = 'none'; }
     else if (i === cur) {
       prog.style.width = Math.min(100, Math.max(0, ((t - s.start) / Math.max(1, s.end - s.start)) * 100)) + '%';
-      seg.style.outline = '2px solid var(--ac)'; seg.style.outlineOffset = '-1px'; seg.style.zIndex = '2';
+      seg.style.outline = '1.5px solid var(--cyan)'; seg.style.outlineOffset = '-1px'; seg.style.zIndex = '2';
     } else { prog.style.width = '0%'; seg.style.outline = 'none'; seg.style.zIndex = '1'; }
   });
 }
@@ -524,7 +645,7 @@ function renderList() {
   document.getElementById('slist').innerHTML = SECTIONS.map((s, i) =>
     `<div class="si${i === currentSection ? ' active' : ''}" onclick="seekTo(${i})">
       <span class="si-num">${s.id}</span>
-      <div class="si-dot" style="background:${gd(s.type)}"></div>
+      <div class="si-dot" style="background:${gd(s.type)};color:${gd(s.type)}"></div>
       <span class="si-name">${s.name}</span>
       <span class="si-time">${fmt(s.start)}</span>
     </div>`
@@ -538,9 +659,10 @@ function renderDetail(i) {
   if (!SECTIONS[i]) return;
   const s = SECTIONS[i];
   const cols = Math.min(4, s.chords?.length || 1);
+  const accentColor = gd(s.type);
   document.getElementById('detail').innerHTML = `
-    <div class="det-head">
-      <div class="det-title">${s.id}. ${s.name}</div>
+    <div class="det-head" style="border-bottom:0.5px solid ${accentColor}22">
+      <div class="det-title" style="background:linear-gradient(90deg,${accentColor},var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.id}. ${s.name}</div>
       <div class="det-meta">${fmt(s.start)} – ${fmt(s.end)} · ${Math.round(s.end - s.start)}s · ${s.key || '—'}</div>
       <div class="det-badges">
         <span class="db db-t">${s.time_signature || '4/4'}</span>
@@ -550,15 +672,15 @@ function renderDetail(i) {
     </div>
     <div class="det-body">
       <div class="leg">
-        <div class="li"><div class="ld" style="background:var(--red)"></div>modal</div>
-        <div class="li"><div class="ld" style="background:var(--yel)"></div>mayor</div>
-        <div class="li"><div class="ld" style="background:var(--pur)"></div>tensión</div>
-        <div class="li"><div class="ld" style="background:var(--grn)"></div>resolución</div>
-        <div class="li"><div class="ld" style="background:var(--blu)"></div>jazz</div>
+        <div class="li"><div class="ld" style="background:var(--magenta)"></div>modal</div>
+        <div class="li"><div class="ld" style="background:var(--gold)"></div>mayor</div>
+        <div class="li"><div class="ld" style="background:var(--violet)"></div>tensión</div>
+        <div class="li"><div class="ld" style="background:var(--aurora1)"></div>resolución</div>
+        <div class="li"><div class="ld" style="background:var(--aurora4)"></div>jazz</div>
       </div>
       ${s.chords?.length ? `
         <div>
-          <div class="sl">acordes</div>
+          <div class="sl">◈ ACORDES</div>
           <div class="cgrid" style="grid-template-columns:repeat(${cols},1fr)">
             ${s.chords.map(c => `
               <div class="cbox ${c.type || 'neutral'}">
@@ -570,23 +692,96 @@ function renderDetail(i) {
         </div>` : ''}
       ${s.rhythm_pattern?.length ? `
         <div>
-          <div class="sl">ritmo</div>
+          <div class="sl">◈ RITMO</div>
           <div class="rh-lbl">${s.rhythm_label || ''}</div>
           <div class="rrow">${s.rhythm_pattern.map(pp).join('')}
-            <span class="rh-note">= 1 pulso</span>
+            <span class="rh-note">= 1 PULSO</span>
           </div>
         </div>` : ''}
       ${s.comment ? `<div class="cmt">${s.comment}</div>` : ''}
       <div class="mcards">
-        ${s.harmony        ? `<div class="mc"><div class="l">armonía</div><div class="v">${s.harmony}</div></div>` : ''}
-        ${s.rhythm_analysis? `<div class="mc"><div class="l">rítmica</div><div class="v">${s.rhythm_analysis}</div></div>` : ''}
-        ${s.color          ? `<div class="mc"><div class="l">color</div><div class="v">${s.color}</div></div>` : ''}
-        ${s.voicings       ? `<div class="mc"><div class="l">voicings</div><div class="v">${s.voicings}</div></div>` : ''}
+        ${s.harmony         ? `<div class="mc"><div class="l">◈ ARMONÍA</div><div class="v">${s.harmony}</div></div>` : ''}
+        ${s.rhythm_analysis ? `<div class="mc"><div class="l">◈ RÍTMICA</div><div class="v">${s.rhythm_analysis}</div></div>` : ''}
+        ${s.color           ? `<div class="mc"><div class="l">◈ COLOR</div><div class="v">${s.color}</div></div>` : ''}
+        ${s.voicings        ? `<div class="mc"><div class="l">◈ VOICINGS</div><div class="v">${s.voicings}</div></div>` : ''}
       </div>
     </div>`;
 }
 
-// [008] INICIALIZACIÓN
+// [009] AURORA ANIMATION
+(function() {
+  const canvas = document.getElementById('cosmos');
+  const ctx = canvas.getContext('2d');
+  let W, H, t = 0;
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const auroras = [
+    { color1: 'rgba(0,255,180,', color2: 'rgba(0,100,255,', speed: 0.0004, amp: 0.12, freq: 2.1, y: 0.25 },
+    { color1: 'rgba(255,0,200,', color2: 'rgba(120,0,255,', speed: 0.0003, amp: 0.10, freq: 1.7, y: 0.45 },
+    { color1: 'rgba(0,200,255,', color2: 'rgba(0,255,120,', speed: 0.0005, amp: 0.08, freq: 2.5, y: 0.65 },
+    { color1: 'rgba(255,100,0,', color2: 'rgba(255,0,100,', speed: 0.0002, amp: 0.09, freq: 1.3, y: 0.80 },
+  ];
+
+  function drawAurora(a) {
+    const yBase = H * a.y;
+    const points = 120;
+    for (let p = 0; p < 3; p++) {
+      ctx.beginPath();
+      const alpha = (0.025 - p * 0.007);
+      const thickness = (H * (a.amp - p * 0.025));
+      for (let x = 0; x <= W; x += W / points) {
+        const wave1 = Math.sin(x * a.freq / W * Math.PI * 2 + t * a.speed * 1000);
+        const wave2 = Math.sin(x * a.freq * 1.3 / W * Math.PI * 2 + t * a.speed * 700 + 1);
+        const y = yBase + (wave1 * 0.6 + wave2 * 0.4) * thickness;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      const grad = ctx.createLinearGradient(0, yBase - thickness, 0, yBase + thickness);
+      grad.addColorStop(0, a.color1 + '0)');
+      grad.addColorStop(0.5, a.color1 + alpha + ')');
+      grad.addColorStop(1, a.color2 + '0)');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = thickness * 0.8;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+  }
+
+  // Partículas
+  const particles = Array.from({ length: 80 }, () => ({
+    x: Math.random() * 1920, y: Math.random() * 1080,
+    r: Math.random() * 1.5 + 0.3,
+    speed: Math.random() * 0.3 + 0.05,
+    angle: Math.random() * Math.PI * 2,
+    color: ['#00f5ff','#ff00e5','#8b00ff','#00ffb3','#ffd700'][Math.floor(Math.random()*5)],
+    alpha: Math.random() * 0.6 + 0.2,
+    twinkle: Math.random() * Math.PI * 2
+  }));
+
+  function animate(ts) {
+    t = ts;
+    ctx.clearRect(0, 0, W, H);
+    auroras.forEach(drawAurora);
+    particles.forEach(p => {
+      p.twinkle += 0.02;
+      const a = p.alpha * (0.5 + 0.5 * Math.sin(p.twinkle));
+      ctx.beginPath();
+      ctx.arc(p.x * W / 1920, p.y * H / 1080, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color.replace(')', `,${a})`).replace('#', 'rgba(') ;
+      // simpler:
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+})();
+
+// [010] INICIALIZACIÓN
 document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalysis(); });
 </script>
 
