@@ -1,42 +1,34 @@
 <!-- ============================================================
      CONTEXTO: XX Analysis — Psicodélico Cósmico
-     Analizador armónico/rítmico con estética de aurora boreal,
-     wormholes y cosmos vibrante. Gemini API + YouTube sync.
+     Analizador armónico/rítmico con estética de aurora boreal.
+     Gemini 2.5 Flash API + YouTube IFrame sync.
      ============================================================
      ÍNDICE DE NAVEGACIÓN
      [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
-     [003] CANVAS AURORA        - línea 180
-     [004] ESTRUCTURA HTML      - línea 220
-     [005] DATOS Y ESTADO       - línea 340
-     [006] YOUTUBE API          - línea 390
-     [007] GEMINI API           - línea 445
-     [008] RENDER UI            - línea 545
-     [009] AURORA ANIMATION     - línea 650
-     [010] INICIALIZACIÓN       - línea 720 
+     [003] ESTRUCTURA HTML      - línea 285
+     [004] DATOS Y ESTADO       - línea 385
+     [005] YOUTUBE API          - línea 425
+     [006] GEMINI API           - línea 475
+     [007] RENDER UI            - línea 560
+     [008] AURORA ANIMATION     - línea 660
+     [009] INICIALIZACIÓN       - línea 710
      ============================================================ -->
 <!DOCTYPE html>
 <html lang="es">
-<!-- [001] HEAD / META -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XX Analysis — Cosmic Music Analyzer</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
-
-<!-- [002] ESTILOS CSS -->
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  /* Paleta cósmica */
   --void:    #03000a;
   --deep:    #080514;
-  --surface: rgba(10,4,25,0.85);
+  --surface: rgba(10,4,25,0.88);
   --glass:   rgba(255,255,255,0.04);
   --glass2:  rgba(255,255,255,0.08);
-
-  /* Auroras */
   --cyan:    #00f5ff;
   --magenta: #ff00e5;
   --violet:  #8b00ff;
@@ -45,43 +37,19 @@
   --aurora3: #7700ff;
   --aurora4: #00d4ff;
   --gold:    #ffd700;
-  --nebula:  #ff4de0;
-
-  /* Texto */
   --tx:  #e8f4ff;
   --tx2: #7a9bb5;
   --tx3: #3a4a5a;
-
-  /* Bordes */
   --bd:  rgba(0,245,255,0.12);
   --bd2: rgba(0,245,255,0.25);
   --bd3: rgba(255,0,229,0.2);
-
-  --r:  8px;
-  --rl: 14px;
+  --r: 8px; --rl: 14px;
   --ff: 'Exo 2', sans-serif;
   --fo: 'Orbitron', monospace;
 }
-
-body {
-  background: var(--void);
-  color: var(--tx);
-  font-family: var(--ff);
-  font-size: 13px;
-  line-height: 1.5;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* CANVAS FONDO */
-#cosmos {
-  position: fixed; inset: 0; z-index: 0;
-  pointer-events: none;
-}
-
-/* ESTRELLAS */
-.stars {
-  position: fixed; inset: 0; z-index: 0;
+body { background: var(--void); color: var(--tx); font-family: var(--ff); font-size: 13px; line-height: 1.5; min-height: 100vh; overflow-x: hidden; }
+#cosmos { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.stars { position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background:
     radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.8) 0%, transparent 100%),
     radial-gradient(1px 1px at 30% 60%, rgba(200,220,255,.6) 0%, transparent 100%),
@@ -92,94 +60,27 @@ body {
     radial-gradient(2px 2px at 80% 15%, rgba(255,240,200,.9) 0%, transparent 100%),
     radial-gradient(1px 1px at 45% 70%, rgba(255,255,255,.7) 0%, transparent 100%),
     radial-gradient(1px 1px at 60% 45%, rgba(180,255,240,.6) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255,200,255,.8) 0%, transparent 100%);
-  pointer-events: none;
-}
-
-/* LAYOUT */
-.app {
-  position: relative; z-index: 1;
-  max-width: 1100px; margin: 0 auto;
-  padding: 1.5rem;
-  display: flex; flex-direction: column; gap: 1rem;
-}
-
-/* GLASS PANEL */
-.glass {
-  background: var(--surface);
-  border: 0.5px solid var(--bd2);
-  border-radius: var(--rl);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 0 30px rgba(0,245,255,0.06), inset 0 0 20px rgba(0,0,0,0.3);
-}
-.glass-mag {
-  background: var(--surface);
-  border: 0.5px solid var(--bd3);
-  border-radius: var(--rl);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 0 30px rgba(255,0,229,0.06), inset 0 0 20px rgba(0,0,0,0.3);
-}
+    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255,200,255,.8) 0%, transparent 100%); }
+.app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.glass     { background: var(--surface); border: 0.5px solid var(--bd2); border-radius: var(--rl); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0,245,255,0.06), inset 0 0 20px rgba(0,0,0,0.3); }
+.glass-mag { background: var(--surface); border: 0.5px solid var(--bd3); border-radius: var(--rl); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(255,0,229,0.06), inset 0 0 20px rgba(0,0,0,0.3); }
 
 /* HEADER */
-.hd {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1rem 1.25rem;
-  flex-wrap: wrap; gap: 8px;
-}
-.logo {
-  font-family: var(--fo);
-  font-size: 26px; font-weight: 900;
-  letter-spacing: .15em;
-  background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 50%, var(--violet) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: none;
-  filter: drop-shadow(0 0 20px rgba(0,245,255,0.5));
-}
-.logo-sub {
-  font-size: 10px; color: var(--tx2); margin-top: 2px;
-  font-family: var(--fo); letter-spacing: .1em; font-weight: 400;
-}
-.cosmic-badge {
-  font-family: var(--fo); font-size: 9px; letter-spacing: .1em;
-  padding: 4px 10px; border-radius: var(--r);
-  border: 0.5px solid var(--bd2);
-  background: rgba(0,245,255,0.08);
-  color: var(--cyan);
-  text-shadow: 0 0 8px var(--cyan);
-}
+.hd { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; flex-wrap: wrap; gap: 8px; }
+.logo { font-family: var(--fo); font-size: 26px; font-weight: 900; letter-spacing: .15em; background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 50%, var(--violet) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 20px rgba(0,245,255,0.5)); }
+.logo-sub { font-size: 10px; color: var(--tx2); margin-top: 2px; font-family: var(--fo); letter-spacing: .1em; }
+.cosmic-badge { font-family: var(--fo); font-size: 9px; letter-spacing: .1em; padding: 4px 10px; border-radius: var(--r); border: 0.5px solid var(--bd2); background: rgba(0,245,255,0.08); color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
 
-/* INPUT PANEL */
+/* INPUT */
 .input-panel { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: .75rem; }
 .ip-row { display: flex; gap: 8px; align-items: center; }
-.url-input {
-  flex: 1; background: rgba(0,0,0,0.4);
-  border: 0.5px solid var(--bd2); border-radius: var(--r);
-  color: var(--cyan); font-family: var(--fo); font-size: 11px;
-  letter-spacing: .04em; padding: 9px 12px; outline: none;
-  transition: border-color .2s, box-shadow .2s;
-}
-.url-input:focus {
-  border-color: var(--magenta);
-  box-shadow: 0 0 15px rgba(255,0,229,0.2), inset 0 0 10px rgba(255,0,229,0.05);
-}
+.url-input { flex: 1; background: rgba(0,0,0,0.4); border: 0.5px solid var(--bd2); border-radius: var(--r); color: var(--cyan); font-family: var(--fo); font-size: 11px; letter-spacing: .04em; padding: 9px 12px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.url-input:focus { border-color: var(--magenta); box-shadow: 0 0 15px rgba(255,0,229,0.2); }
 .url-input::placeholder { color: var(--tx3); }
-.btn-cosmic {
-  padding: 9px 20px; border: none; border-radius: var(--r); cursor: pointer;
-  font-family: var(--fo); font-size: 11px; font-weight: 700; letter-spacing: .08em;
-  background: linear-gradient(135deg, var(--violet), var(--magenta));
-  color: #fff; white-space: nowrap;
-  box-shadow: 0 0 20px rgba(255,0,229,0.4);
-  transition: box-shadow .2s, transform .1s;
-}
+.btn-cosmic { padding: 9px 20px; border: none; border-radius: var(--r); cursor: pointer; font-family: var(--fo); font-size: 11px; font-weight: 700; letter-spacing: .08em; background: linear-gradient(135deg, var(--violet), var(--magenta)); color: #fff; white-space: nowrap; box-shadow: 0 0 20px rgba(255,0,229,0.4); transition: box-shadow .2s, transform .1s; }
 .btn-cosmic:hover { box-shadow: 0 0 30px rgba(255,0,229,0.7); transform: translateY(-1px); }
-.btn-cosmic:active { transform: translateY(0); }
-.btn-cosmic:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+.btn-cosmic:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
 .hint { font-size: 10px; color: var(--tx3); font-style: italic; }
-
-/* STATUS */
 .status { font-size: 11px; padding: 7px 12px; border-radius: var(--r); display: none; font-family: var(--fo); letter-spacing: .04em; }
 .status.loading { background: rgba(0,245,255,0.08); color: var(--cyan); border: 0.5px solid var(--bd2); display: block; }
 .status.error   { background: rgba(255,0,100,0.1); color: #ff6090; border: 0.5px solid rgba(255,0,100,0.3); display: block; }
@@ -191,22 +92,15 @@ body {
 .left { display: flex; flex-direction: column; gap: .875rem; }
 
 /* VIDEO */
-.video-wrap {
-  position: relative; width: 100%; padding-top: 56.25%;
-  background: rgba(0,0,0,0.6); border-radius: var(--rl); overflow: hidden;
-  border: 0.5px solid var(--bd2);
-  box-shadow: 0 0 40px rgba(0,245,255,0.1);
-}
+.video-wrap { position: relative; width: 100%; padding-top: 56.25%; background: rgba(0,0,0,0.6); border-radius: var(--rl); overflow: hidden; border: 0.5px solid var(--bd2); box-shadow: 0 0 40px rgba(0,245,255,0.1); }
 .video-wrap > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 .vph { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--tx3); }
 .vph .big { font-size: 48px; filter: drop-shadow(0 0 10px var(--cyan)); }
 .vph span { font-family: var(--fo); font-size: 11px; letter-spacing: .08em; color: var(--tx2); }
 
 /* NOW BAR */
-.now-bar {
-  padding: .625rem 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 44px;
-}
-.now-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .3s; box-shadow: 0 0 8px currentColor; }
+.now-bar { padding: .625rem 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 44px; }
+.now-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .3s; box-shadow: 0 0 8px currentColor; }
 .now-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; }
 .now-name { font-family: var(--fo); font-size: 12px; color: var(--cyan); font-weight: 700; flex: 1; text-shadow: 0 0 10px rgba(0,245,255,.5); letter-spacing: .04em; }
 .now-m    { font-family: var(--fo); font-size: 9px; padding: 2px 7px; border-radius: var(--r); border: 0.5px solid var(--magenta); background: rgba(255,0,229,0.1); color: var(--magenta); letter-spacing: .06em; text-shadow: 0 0 8px var(--magenta); }
@@ -217,19 +111,19 @@ body {
 .timeline { display: flex; height: 28px; border-radius: var(--r); overflow: hidden; gap: 1px; background: rgba(0,0,0,.5); box-shadow: 0 0 15px rgba(0,245,255,0.08); }
 .tl-seg  { display: flex; align-items: center; justify-content: center; font-family: var(--fo); font-size: 8px; font-weight: 700; color: rgba(255,255,255,.25); cursor: pointer; position: relative; overflow: hidden; transition: filter .2s; flex-shrink: 0; }
 .tl-seg:hover { filter: brightness(1.8) saturate(1.5); }
-.tl-seg.active { outline: 1.5px solid var(--cyan); outline-offset: -1px; z-index: 2; color: var(--cyan); text-shadow: 0 0 6px var(--cyan); }
+.tl-seg.active { outline: 1.5px solid var(--cyan); outline-offset: -1px; z-index: 2; color: var(--cyan); }
 .tl-prog { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,0.2); pointer-events: none; }
 
 /* DETAIL */
 .detail { overflow: hidden; }
-.det-empty { padding: 2.5rem; text-align: center; color: var(--tx3); font-family: var(--fo); font-size: 11px; letter-spacing: .06em; line-height: 2; }
-.det-head { padding: .875rem 1.125rem; border-bottom: 0.5px solid var(--bd); }
-.det-title { font-family: var(--fo); font-size: 15px; font-weight: 700; letter-spacing: .05em; background: linear-gradient(90deg, var(--cyan), var(--aurora1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.det-meta  { font-size: 11px; color: var(--tx2); margin-top: 3px; font-family: var(--fo); letter-spacing: .04em; }
+.det-empty { padding: 2.5rem; text-align: center; color: var(--tx3); font-family: var(--fo); font-size: 11px; letter-spacing: .06em; line-height: 2.2; }
+.det-head  { padding: .875rem 1.125rem; border-bottom: 0.5px solid var(--bd); }
+.det-title { font-family: var(--fo); font-size: 14px; font-weight: 700; letter-spacing: .05em; background: linear-gradient(90deg, var(--cyan), var(--aurora1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.det-meta  { font-size: 11px; color: var(--tx2); margin-top: 3px; font-family: var(--fo); letter-spacing: .03em; }
 .det-badges { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
-.db { font-family: var(--fo); font-size: 9px; padding: 2px 7px; border-radius: var(--r); border: 0.5px solid; letter-spacing: .06em; }
-.db-t { background: rgba(0,212,255,0.1); color: var(--aurora4); border-color: rgba(0,212,255,0.3); }
-.db-k { background: rgba(255,215,0,0.1);  color: var(--gold);   border-color: rgba(255,215,0,0.3); text-shadow: 0 0 6px var(--gold); }
+.db   { font-family: var(--fo); font-size: 9px; padding: 2px 7px; border-radius: var(--r); border: 0.5px solid; letter-spacing: .05em; }
+.db-t { background: rgba(0,212,255,0.1);  color: var(--aurora4); border-color: rgba(0,212,255,0.3); }
+.db-k { background: rgba(255,215,0,0.1);  color: var(--gold);    border-color: rgba(255,215,0,0.3); }
 .db-f { background: rgba(0,255,179,0.1);  color: var(--aurora1); border-color: rgba(0,255,179,0.3); }
 .det-body { padding: .875rem 1.125rem; display: flex; flex-direction: column; gap: .875rem; }
 
@@ -237,43 +131,35 @@ body {
 .sl { font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
 .sl::after { content: ''; flex: 1; height: 0.5px; background: linear-gradient(90deg, var(--bd2), transparent); }
 .cgrid { display: grid; gap: 5px; }
-.cbox {
-  border: 0.5px solid rgba(255,255,255,0.08); border-left: 2px solid;
-  border-radius: var(--r); padding: 7px 9px; min-height: 48px;
-  position: relative; background: rgba(0,0,0,0.3);
-  backdrop-filter: blur(5px); transition: box-shadow .2s;
-}
-.cbox:hover { box-shadow: 0 0 12px rgba(0,245,255,0.15); }
+.cbox { border: 0.5px solid rgba(255,255,255,0.08); border-left: 2px solid; border-radius: var(--r); padding: 7px 9px; min-height: 48px; position: relative; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px); }
 .cbox.modal   { border-left-color: var(--magenta); }
 .cbox.tension { border-left-color: var(--violet); }
 .cbox.resolve { border-left-color: var(--aurora1); }
 .cbox.jazz    { border-left-color: var(--aurora4); }
 .cbox.bright  { border-left-color: var(--gold); }
 .cbox.neutral { border-left-color: var(--tx3); }
-.cn  { font-family: var(--fo); font-size: 15px; font-weight: 700; color: var(--tx); text-shadow: 0 0 8px rgba(0,245,255,0.3); }
-.cs  { font-size: 9px; color: var(--tx2); margin-top: 2px; font-family: var(--fo); letter-spacing: .04em; }
+.cn  { font-family: var(--fo); font-size: 15px; font-weight: 700; color: var(--tx); }
+.cs  { font-size: 9px; color: var(--tx2); margin-top: 2px; font-family: var(--fo); letter-spacing: .03em; }
 .cb2 { position: absolute; top: 5px; right: 7px; font-size: 9px; color: var(--tx3); font-family: var(--fo); }
 
 /* RHYTHM */
-.rh-lbl { font-size: 10px; color: var(--tx2); margin-bottom: 5px; font-family: var(--fo); letter-spacing: .04em; }
-.rrow { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
-.pp  { width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; transition: box-shadow .2s; }
-.pps { background: linear-gradient(135deg, var(--cyan), var(--aurora1)); color: #000; box-shadow: 0 0 8px rgba(0,245,255,0.5); font-weight: 700; }
-.ppw { background: rgba(255,255,255,0.04); color: var(--tx3); border: 0.5px solid rgba(255,255,255,0.08); }
-.rh-note { font-size: 9px; color: var(--tx3); margin-left: 6px; font-family: var(--fo); letter-spacing: .04em; }
-
-/* COMMENT */
-.cmt { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.7; padding-left: 12px; border-left: 2px solid; border-image: linear-gradient(to bottom, var(--cyan), var(--magenta)) 1; }
+.rh-lbl { font-size: 10px; color: var(--tx2); margin-bottom: 5px; font-family: var(--fo); letter-spacing: .03em; }
+.rrow   { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
+.pp     { width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+.pps   { background: linear-gradient(135deg, var(--cyan), var(--aurora1)); color: #000; box-shadow: 0 0 8px rgba(0,245,255,0.5); font-weight: 700; }
+.ppw   { background: rgba(255,255,255,0.04); color: var(--tx3); border: 0.5px solid rgba(255,255,255,0.08); }
+.rh-note { font-size: 9px; color: var(--tx3); margin-left: 6px; font-family: var(--fo); }
+.cmt { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.7; padding-left: 12px; border-left: 2px solid var(--magenta); }
 
 /* MINI CARDS */
 .mcards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.mc { background: rgba(0,0,0,0.3); border: 0.5px solid var(--bd); border-radius: var(--r); padding: 8px 10px; }
-.mc .l { font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
-.mc .v { font-size: 10px; color: var(--tx2); line-height: 1.5; }
+.mc     { background: rgba(0,0,0,0.3); border: 0.5px solid var(--bd); border-radius: var(--r); padding: 8px 10px; }
+.mc .l  { font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+.mc .v  { font-size: 10px; color: var(--tx2); line-height: 1.5; }
 
 /* LEGEND */
 .leg { display: flex; gap: 8px; flex-wrap: wrap; }
-.li  { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--tx3); font-family: var(--fo); letter-spacing: .04em; }
+.li  { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--tx3); font-family: var(--fo); }
 .ld  { width: 8px; height: 8px; border-radius: 2px; }
 
 /* RIGHT PANEL */
@@ -282,70 +168,59 @@ body {
 .rh-hdr span { font-size: 11px; color: var(--cyan); text-transform: none; letter-spacing: 0; text-shadow: 0 0 8px rgba(0,245,255,.4); }
 .slist { overflow-y: auto; flex: 1; max-height: 620px; }
 .slist::-webkit-scrollbar { width: 3px; }
-.slist::-webkit-scrollbar-track { background: transparent; }
 .slist::-webkit-scrollbar-thumb { background: var(--violet); border-radius: 2px; }
 .slist-empty { padding: 2rem; text-align: center; color: var(--tx3); font-family: var(--fo); font-size: 10px; letter-spacing: .06em; line-height: 2; }
-.si { display: flex; align-items: center; gap: 7px; padding: .5rem 1rem; cursor: pointer; border-bottom: 0.5px solid var(--bd); transition: background .15s, border-color .15s; }
+.si { display: flex; align-items: center; gap: 7px; padding: .5rem 1rem; cursor: pointer; border-bottom: 0.5px solid var(--bd); transition: background .15s; }
 .si:last-child { border-bottom: none; }
 .si:hover { background: rgba(0,245,255,0.04); }
 .si.active { background: rgba(0,245,255,0.07); border-left: 2px solid var(--cyan); padding-left: calc(1rem - 2px); }
-.si-num  { font-family: var(--fo); font-size: 9px; color: var(--tx3); min-width: 22px; letter-spacing: .04em; }
-.si-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 5px currentColor; }
+.si-num  { font-family: var(--fo); font-size: 9px; color: var(--tx3); min-width: 22px; }
+.si-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .si-name { font-size: 11px; color: var(--tx); flex: 1; }
 .si-time { font-family: var(--fo); font-size: 9px; color: var(--tx3); }
 
-/* SYNC BAR */
-.sync-bar { display: flex; align-items: center; gap: 8px; font-family: var(--fo); font-size: 10px; color: var(--tx3); letter-spacing: .04em; }
+/* SYNC */
+.sync-bar { display: flex; align-items: center; gap: 8px; font-family: var(--fo); font-size: 10px; color: var(--tx3); }
 .sync-bar input[type=range] { flex: 1; accent-color: var(--magenta); }
 .sync-val { font-size: 10px; color: var(--magenta); min-width: 38px; text-shadow: 0 0 6px var(--magenta); }
-.sync-bar button { padding: 3px 8px; background: transparent; border: 0.5px solid var(--bd); border-radius: var(--r); color: var(--tx3); cursor: pointer; font-family: var(--fo); font-size: 9px; letter-spacing: .06em; transition: border-color .15s; }
+.sync-bar button { padding: 3px 8px; background: transparent; border: 0.5px solid var(--bd); border-radius: var(--r); color: var(--tx3); cursor: pointer; font-family: var(--fo); font-size: 9px; transition: border-color .15s; }
 .sync-bar button:hover { border-color: var(--magenta); color: var(--magenta); }
-
 .footer { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .06em; padding-top: .5rem; text-align: center; }
 
-/* OVERLAY ANALYZING */
+/* OVERLAY */
 .ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 .ov.show { display: flex; }
 .ov-box { background: rgba(8,5,20,0.95); border: 0.5px solid var(--bd2); border-radius: var(--rl); padding: 2.5rem 3rem; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 0 60px rgba(0,245,255,0.2), 0 0 120px rgba(255,0,229,0.1); }
-.ov-icon { font-size: 40px; margin-bottom: .75rem; animation: pulse-glow 2s ease-in-out infinite; }
-@keyframes pulse-glow { 0%,100%{filter:drop-shadow(0 0 10px var(--cyan))} 50%{filter:drop-shadow(0 0 25px var(--magenta))} }
-.ov-title { font-family: var(--fo); font-size: 16px; font-weight: 700; letter-spacing: .1em; background: linear-gradient(90deg, var(--cyan), var(--magenta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
+.wormhole { width: 60px; height: 60px; margin: 0 auto 1rem; position: relative; }
+.wormhole::before, .wormhole::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; }
+.wormhole::before { border-top-color: var(--cyan); border-right-color: var(--magenta); animation: worm 1.2s linear infinite; }
+.wormhole::after  { border-bottom-color: var(--violet); border-left-color: var(--aurora1); animation: worm 0.8s linear infinite reverse; inset: 8px; }
+@keyframes worm { to { transform: rotate(360deg); } }
+.ov-title { font-family: var(--fo); font-size: 15px; font-weight: 700; letter-spacing: .1em; background: linear-gradient(90deg, var(--cyan), var(--magenta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
 .ov-sub   { font-size: 11px; color: var(--tx2); line-height: 1.6; }
 .ov-bar   { margin-top: 18px; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
 .ov-fill  { height: 100%; border-radius: 2px; width: 0%; transition: width .4s; background: linear-gradient(90deg, var(--violet), var(--magenta), var(--cyan)); }
 .ov-step  { font-family: var(--fo); font-size: 10px; color: var(--cyan); margin-top: 10px; letter-spacing: .06em; text-shadow: 0 0 8px var(--cyan); }
-
-/* Wormhole spinner */
-.wormhole { width: 60px; height: 60px; margin: 0 auto 1rem; position: relative; }
-.wormhole::before, .wormhole::after {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  border: 2px solid transparent;
-}
-.wormhole::before { border-top-color: var(--cyan); border-right-color: var(--magenta); animation: worm 1.2s linear infinite; }
-.wormhole::after  { border-bottom-color: var(--violet); border-left-color: var(--aurora1); animation: worm 0.8s linear infinite reverse; inset: 8px; }
-@keyframes worm { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-
 <div class="stars"></div>
 <canvas id="cosmos"></canvas>
 
-<!-- [003] OVERLAY -->
+<!-- OVERLAY -->
 <div class="ov" id="ov">
   <div class="ov-box">
     <div class="wormhole"></div>
     <div class="ov-title">SCANNING THE COSMOS</div>
-    <div class="ov-sub" id="ovSub">Gemini está analizando la estructura armónica y rítmica de la canción...</div>
+    <div class="ov-sub">Gemini está analizando la estructura armónica y rítmica...</div>
     <div class="ov-bar"><div class="ov-fill" id="ovFill"></div></div>
     <div class="ov-step" id="ovStep">INICIANDO SECUENCIA...</div>
   </div>
 </div>
 
-<!-- [004] ESTRUCTURA HTML -->
+<!-- APP -->
 <div class="app">
 
-  <!-- HEADER -->
   <div class="glass hd">
     <div>
       <div class="logo">XX ANALYSIS</div>
@@ -354,7 +229,6 @@ body {
     <span class="cosmic-badge">GEMINI AI · YOUTUBE SYNC</span>
   </div>
 
-  <!-- INPUT -->
   <div class="glass input-panel">
     <div class="ip-row">
       <input type="text" class="url-input" id="ytUrl"
@@ -362,15 +236,13 @@ body {
         autocomplete="off">
       <button class="btn-cosmic" id="btnAnalyze" onclick="startAnalysis()">⟁ ANALIZAR</button>
     </div>
-    <div class="hint">Pegá cualquier URL de YouTube y presioná Enter o el botón · El análisis tarda 10-20 segundos</div>
+    <div class="hint">Pegá cualquier URL de YouTube · Enter para analizar · El análisis tarda 15-20 segundos</div>
     <div class="status" id="status"></div>
   </div>
 
-  <!-- MAIN -->
   <div class="main" id="mainGrid" style="display:none">
     <div class="left">
 
-      <!-- VIDEO -->
       <div class="video-wrap">
         <div id="ytPlayer">
           <div class="vph">
@@ -380,7 +252,6 @@ body {
         </div>
       </div>
 
-      <!-- SYNC -->
       <div class="glass sync-bar" style="padding:.625rem 1rem">
         <span>SYNC OFFSET:</span>
         <input type="range" id="offsetSlider" min="-15" max="15" step="0.5" value="0"
@@ -389,7 +260,6 @@ body {
         <button onclick="resetOffset()">RESET</button>
       </div>
 
-      <!-- NOW BAR -->
       <div class="glass now-bar">
         <div class="now-dot" id="nowDot" style="background:var(--tx3)"></div>
         <span class="now-lbl">NOW:</span>
@@ -398,20 +268,17 @@ body {
         <span class="now-t" id="nowTime">0:00</span>
       </div>
 
-      <!-- TIMELINE -->
       <div>
         <div class="tl-lbl">▸ MAPA DE SECCIONES · CLICK PARA SALTAR</div>
         <div class="timeline" id="timeline"></div>
       </div>
 
-      <!-- DETAIL -->
       <div class="glass detail" id="detail">
         <div class="det-empty">◈<br><br>ANALIZÁ UNA CANCIÓN<br>PARA VER EL ANÁLISIS<br>SECCIÓN POR SECCIÓN</div>
       </div>
 
     </div>
 
-    <!-- RIGHT PANEL -->
     <div class="glass-mag right">
       <div class="rh-hdr">SECCIONES <span id="secCount">—</span></div>
       <div class="slist" id="slist">
@@ -420,31 +287,30 @@ body {
     </div>
   </div>
 
-  <div class="footer">XX ANALYSIS · POWERED BY GEMINI AI · GITHUB.COM/VIC919WASP/XX-ANALISIS</div>
+  <div class="footer">XX ANALYSIS · POWERED BY GEMINI 2.5 FLASH · GITHUB.COM/VIC919WASP/XX-ANALISIS</div>
 </div>
 
-<!-- [005] DATOS Y ESTADO -->
+<!-- [004] DATOS Y ESTADO -->
 <script>
 const GEMINI_KEY = '__GEMINI_API_KEY__';
 
 let SECTIONS = [], TOTAL = 0, currentSection = 0;
 let ytPlayer = null, syncInterval = null, offsetSecs = 0;
 
-// Colores cósmicos por tipo de sección
 const SCOL = {
-  intro:        ['#1a0a2e','#8b00ff'], riff:         ['#2a0a0a','#ff003c'],
-  verse:        ['#0a0a2a','#0066ff'], estrofa:      ['#0a0a2a','#0066ff'],
-  'pre-coro':   ['#1a0a2a','#cc00ff'], precoro:      ['#1a0a2a','#cc00ff'],
-  chorus:       ['#0a1a0a','#00ff88'], coro:         ['#0a1a0a','#00ff88'],
-  bridge:       ['#1a1a0a','#ffcc00'], puente:       ['#1a1a0a','#ffcc00'],
-  instrumental: ['#0a1a1a','#00ccff'], solo:         ['#0a1a0a','#00ff44'],
-  break:        ['#2a0a0a','#ff0066'], climax:       ['#2a0a15','#ff6600'],
-  outro:        ['#0f0f15','#444466'],
+  intro:['#1a0a2e','#8b00ff'], riff:['#2a0a0a','#ff003c'],
+  verse:['#0a0a2a','#0066ff'], estrofa:['#0a0a2a','#0066ff'],
+  'pre-coro':['#1a0a2a','#cc00ff'], precoro:['#1a0a2a','#cc00ff'],
+  chorus:['#0a1a0a','#00ff88'], coro:['#0a1a0a','#00ff88'],
+  bridge:['#1a1a0a','#ffcc00'], puente:['#1a1a0a','#ffcc00'],
+  instrumental:['#0a1a1a','#00ccff'], solo:['#0a1a0a','#00ff44'],
+  break:['#2a0a0a','#ff0066'], climax:['#2a0a15','#ff6600'],
+  outro:['#0f0f15','#444466'],
 };
 const gc = t => (SCOL[t?.toLowerCase()] || ['#111','#555'])[0];
 const gd = t => (SCOL[t?.toLowerCase()] || ['#111','#555'])[1];
 
-// [006] YOUTUBE API
+// [005] YOUTUBE API
 function extractId(url) {
   const pp = [/[?&]v=([^&#]+)/, /youtu\.be\/([^?&#]+)/, /embed\/([^?&#]+)/, /shorts\/([^?&#]+)/];
   for (const p of pp) { const m = url.match(p); if (m) return m[1]; }
@@ -494,7 +360,32 @@ function getSectionAt(t) {
 function updateOffset(v) { offsetSecs = parseFloat(v); document.getElementById('offsetVal').textContent = parseFloat(v).toFixed(1) + 's'; }
 function resetOffset()   { offsetSecs = 0; document.getElementById('offsetSlider').value = 0; document.getElementById('offsetVal').textContent = '0.0s'; }
 
-// [007] GEMINI API
+// [006] GEMINI API
+function repairJson(str) {
+  // Eliminar coma final antes de cerrar
+  str = str.replace(/,\s*([}\]])/g, '$1');
+  // Contar llaves/corchetes abiertos
+  let opens = 0, arrOpen = 0;
+  for (const c of str) {
+    if (c === '{') opens++; else if (c === '}') opens--;
+    if (c === '[') arrOpen++; else if (c === ']') arrOpen--;
+  }
+  // Cortar en el último objeto completo si hay desequilibrio
+  if (opens > 0 || arrOpen > 0) {
+    const lastGood = str.lastIndexOf('},');
+    if (lastGood > 0) str = str.substring(0, lastGood + 1);
+    // Recalcular
+    opens = 0; arrOpen = 0;
+    for (const c of str) {
+      if (c === '{') opens++; else if (c === '}') opens--;
+      if (c === '[') arrOpen++; else if (c === ']') arrOpen--;
+    }
+    for (let i = 0; i < arrOpen; i++) str += ']';
+    for (let i = 0; i < opens; i++) str += '}';
+  }
+  return str;
+}
+
 async function startAnalysis() {
   const url = document.getElementById('ytUrl').value.trim();
   if (!url) return setStatus('error', '⚠ Ingresá una URL de YouTube.');
@@ -502,54 +393,18 @@ async function startAnalysis() {
   if (!vid) return setStatus('error', '⚠ URL inválida. Usá una URL de youtube.com o youtu.be');
 
   showOv(true); setOvStep('ESCANEANDO EL UNIVERSO MUSICAL...', 10);
+  document.getElementById('btnAnalyze').disabled = true;
 
-  const prompt = `Eres un experto en teoría musical, armonía jazz, análisis rítmico y prog metal.
+  // Prompt compacto para no truncar la respuesta
+  const prompt = `Eres un experto en teoría musical. Analizá la canción del video YouTube ID: ${vid}
 
-Analizá la canción del video de YouTube con ID: ${vid}
-URL completa: ${url}
+Respondé SOLO con JSON válido (sin markdown):
+{"title":"...","artist":"...","total_duration":300,"bpm":120,"key":"E minor","sections":[{"id":"01","name":"...","type":"intro","start":0,"end":20,"time_signature":"4/4","key":"E minor","feel":"...","bpm":120,"chords":[{"name":"Em","function":"i","beats":"2","type":"modal","note":""}],"rhythm_pattern":[1,0,1,0,1,0,1,0],"rhythm_label":"4/4 negras","comment":"...","harmony":"...","rhythm_analysis":"...","color":"...","voicings":"..."}]}
 
-Identificá el artista y título por el ID del video, luego analizá TODAS las secciones de la canción con detalle armónico y rítmico.
-
-Respondé ÚNICAMENTE con un objeto JSON válido (sin markdown, sin backticks, solo JSON puro):
-
-{
-  "title": "Título de la canción",
-  "artist": "Artista",
-  "total_duration": 300,
-  "bpm": 120,
-  "key": "E minor",
-  "sections": [
-    {
-      "id": "01",
-      "name": "Nombre descriptivo de la sección",
-      "type": "intro|riff|verse|chorus|bridge|solo|break|outro|instrumental|precoro",
-      "start": 0,
-      "end": 20,
-      "time_signature": "4/4",
-      "key": "E minor",
-      "feel": "oscuro / pesado",
-      "bpm": 120,
-      "chords": [
-        { "name": "Em7", "function": "i7", "beats": "2", "type": "modal", "note": "tónica" }
-      ],
-      "rhythm_pattern": [1,0,1,0,1,0,1,0],
-      "rhythm_label": "4/4 · negras · palm mute",
-      "comment": "Descripción musical de 2-3 oraciones.",
-      "harmony": "Análisis armónico detallado.",
-      "rhythm_analysis": "Análisis rítmico detallado.",
-      "color": "Color sonoro, concepto, influencias.",
-      "voicings": "Voicings específicos e instrumentación."
-    }
-  ]
-}
-
-Reglas:
-- chord type: modal, tension, resolve, jazz, bright, o neutral
-- rhythm_pattern: array de 0s y 1s (8-24 elementos)
-- start/end en segundos reales aproximados
-- Identificá TODAS las secciones incluyendo repeticiones
-- Sé específico: Em7 en vez de Em, ♭VII en vez de "séptimo grado"
-- Si hay cambios de métrica indicalos: "4/4 → 7/8"`;
+type solo puede ser: intro, riff, verse, chorus, bridge, solo, break, outro, instrumental, precoro
+chord type solo puede ser: modal, tension, resolve, jazz, bright, neutral
+Incluí TODAS las secciones reales de la canción con timestamps en segundos.
+Sé conciso en los textos (max 100 chars por campo de texto) para no truncar.`;
 
   try {
     setOvStep('TRANSMITIENDO A GEMINI...', 30);
@@ -560,25 +415,43 @@ Reglas:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
+          generationConfig: { temperature: 0.1, maxOutputTokens: 16384, responseMimeType: 'application/json' }
         })
       }
     );
     setOvStep('RECIBIENDO SEÑAL CÓSMICA...', 60);
-    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    if (!res.ok) {
+      const e = await res.json();
+      throw new Error(e.error?.message || `HTTP ${res.status}`);
+    }
     const data = await res.json();
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!raw) throw new Error('Gemini no devolvió contenido. Intentá de nuevo.');
+
     setOvStep('DECODIFICANDO FRECUENCIAS...', 80);
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const analysis = JSON.parse(clean);
-    if (!analysis.sections?.length) throw new Error('Sin secciones en el análisis. Probá con otra URL.');
+
+    let clean = raw.replace(/```json|```/g, '').trim();
+    let analysis;
+    try {
+      analysis = JSON.parse(clean);
+    } catch (e) {
+      // intentar reparar JSON truncado
+      clean = repairJson(clean);
+      analysis = JSON.parse(clean);
+    }
+
+    if (!analysis.sections?.length) throw new Error('Sin secciones en el análisis. Intentá de nuevo.');
+
     setOvStep('MATERIALIZANDO ANÁLISIS...', 95);
     loadAnalysis(analysis, vid);
     setOvStep('✦ ANÁLISIS COMPLETO ✦', 100);
     setTimeout(() => showOv(false), 600);
+
   } catch (err) {
     showOv(false);
     setStatus('error', `⚠ ${err.message}`);
+  } finally {
+    document.getElementById('btnAnalyze').disabled = false;
   }
 }
 
@@ -593,7 +466,7 @@ function loadAnalysis(data, vid) {
   else window._pendingVid = vid;
 }
 
-// [008] RENDER UI
+// [007] RENDER UI
 const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
 function setStatus(t, m) {
   const el = document.getElementById('status');
@@ -602,14 +475,16 @@ function setStatus(t, m) {
 }
 function hideStatus() { document.getElementById('status').style.display = 'none'; }
 function showOv(s) { document.getElementById('ov').classList.toggle('show', s); }
-function setOvStep(m, p) { document.getElementById('ovStep').textContent = m; document.getElementById('ovFill').style.width = p + '%'; }
+function setOvStep(m, p) {
+  document.getElementById('ovStep').textContent = m;
+  document.getElementById('ovFill').style.width = p + '%';
+}
 
 function updateNow(t, i) {
   if (!SECTIONS[i]) return;
   const s = SECTIONS[i];
   const dot = document.getElementById('nowDot');
   dot.style.background = gd(s.type);
-  dot.style.color = gd(s.type);
   document.getElementById('nowName').textContent = `${s.id} · ${s.name}`;
   document.getElementById('nowMeter').textContent = s.time_signature || '4/4';
   document.getElementById('nowTime').textContent = fmt(t);
@@ -618,8 +493,7 @@ function updateNow(t, i) {
 function buildTL() {
   document.getElementById('timeline').innerHTML = SECTIONS.map((s, i) => {
     const w = ((s.end - s.start) / TOTAL) * 100;
-    const bg = gc(s.type);
-    return `<div class="tl-seg" id="tls${i}" style="width:${w}%;background:${bg}"
+    return `<div class="tl-seg" id="tls${i}" style="width:${w}%;background:${gc(s.type)}"
       onclick="seekTo(${i})" title="${s.id} · ${s.name}">
       <div class="tl-prog" id="tlp${i}" style="width:0%"></div>
       <span>${s.id}</span>
@@ -645,7 +519,7 @@ function renderList() {
   document.getElementById('slist').innerHTML = SECTIONS.map((s, i) =>
     `<div class="si${i === currentSection ? ' active' : ''}" onclick="seekTo(${i})">
       <span class="si-num">${s.id}</span>
-      <div class="si-dot" style="background:${gd(s.type)};color:${gd(s.type)}"></div>
+      <div class="si-dot" style="background:${gd(s.type)}"></div>
       <span class="si-name">${s.name}</span>
       <span class="si-time">${fmt(s.start)}</span>
     </div>`
@@ -653,16 +527,16 @@ function renderList() {
   document.querySelector('.si.active')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
-function pp(p) { return `<div class="pp ${p ? 'pps' : 'ppw'}">${p ? '●' : '·'}</div>`; }
+function ppEl(p) { return `<div class="pp ${p ? 'pps' : 'ppw'}">${p ? '●' : '·'}</div>`; }
 
 function renderDetail(i) {
   if (!SECTIONS[i]) return;
   const s = SECTIONS[i];
   const cols = Math.min(4, s.chords?.length || 1);
-  const accentColor = gd(s.type);
+  const ac = gd(s.type);
   document.getElementById('detail').innerHTML = `
-    <div class="det-head" style="border-bottom:0.5px solid ${accentColor}22">
-      <div class="det-title" style="background:linear-gradient(90deg,${accentColor},var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.id}. ${s.name}</div>
+    <div class="det-head">
+      <div class="det-title" style="background:linear-gradient(90deg,${ac},var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.id}. ${s.name}</div>
       <div class="det-meta">${fmt(s.start)} – ${fmt(s.end)} · ${Math.round(s.end - s.start)}s · ${s.key || '—'}</div>
       <div class="det-badges">
         <span class="db db-t">${s.time_signature || '4/4'}</span>
@@ -694,7 +568,7 @@ function renderDetail(i) {
         <div>
           <div class="sl">◈ RITMO</div>
           <div class="rh-lbl">${s.rhythm_label || ''}</div>
-          <div class="rrow">${s.rhythm_pattern.map(pp).join('')}
+          <div class="rrow">${s.rhythm_pattern.map(ppEl).join('')}
             <span class="rh-note">= 1 PULSO</span>
           </div>
         </div>` : ''}
@@ -708,83 +582,74 @@ function renderDetail(i) {
     </div>`;
 }
 
-// [009] AURORA ANIMATION
+// [008] AURORA ANIMATION
 (function() {
   const canvas = document.getElementById('cosmos');
   const ctx = canvas.getContext('2d');
-  let W, H, t = 0;
-
+  let W, H;
   function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
   resize();
   window.addEventListener('resize', resize);
 
   const auroras = [
-    { color1: 'rgba(0,255,180,', color2: 'rgba(0,100,255,', speed: 0.0004, amp: 0.12, freq: 2.1, y: 0.25 },
-    { color1: 'rgba(255,0,200,', color2: 'rgba(120,0,255,', speed: 0.0003, amp: 0.10, freq: 1.7, y: 0.45 },
-    { color1: 'rgba(0,200,255,', color2: 'rgba(0,255,120,', speed: 0.0005, amp: 0.08, freq: 2.5, y: 0.65 },
-    { color1: 'rgba(255,100,0,', color2: 'rgba(255,0,100,', speed: 0.0002, amp: 0.09, freq: 1.3, y: 0.80 },
+    { color1: 'rgba(0,255,180,', color2: 'rgba(0,100,255,', speed: 0.4, amp: 0.12, freq: 2.1, y: 0.25 },
+    { color1: 'rgba(255,0,200,', color2: 'rgba(120,0,255,', speed: 0.3, amp: 0.10, freq: 1.7, y: 0.45 },
+    { color1: 'rgba(0,200,255,', color2: 'rgba(0,255,120,', speed: 0.5, amp: 0.08, freq: 2.5, y: 0.65 },
+    { color1: 'rgba(255,100,0,', color2: 'rgba(255,0,100,', speed: 0.2, amp: 0.09, freq: 1.3, y: 0.80 },
   ];
 
-  function drawAurora(a) {
+  function drawAurora(a, t) {
     const yBase = H * a.y;
-    const points = 120;
+    const thickness = H * a.amp;
     for (let p = 0; p < 3; p++) {
+      const alpha = 0.025 - p * 0.007;
+      const pts = 80;
       ctx.beginPath();
-      const alpha = (0.025 - p * 0.007);
-      const thickness = (H * (a.amp - p * 0.025));
-      for (let x = 0; x <= W; x += W / points) {
-        const wave1 = Math.sin(x * a.freq / W * Math.PI * 2 + t * a.speed * 1000);
-        const wave2 = Math.sin(x * a.freq * 1.3 / W * Math.PI * 2 + t * a.speed * 700 + 1);
-        const y = yBase + (wave1 * 0.6 + wave2 * 0.4) * thickness;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      for (let xi = 0; xi <= pts; xi++) {
+        const x = (xi / pts) * W;
+        const w1 = Math.sin(x * a.freq / W * Math.PI * 2 + t * a.speed * 0.001);
+        const w2 = Math.sin(x * a.freq * 1.3 / W * Math.PI * 2 + t * a.speed * 0.0007 + 1);
+        const y = yBase + (w1 * 0.6 + w2 * 0.4) * (thickness - p * 20);
+        xi === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       const grad = ctx.createLinearGradient(0, yBase - thickness, 0, yBase + thickness);
       grad.addColorStop(0, a.color1 + '0)');
       grad.addColorStop(0.5, a.color1 + alpha + ')');
       grad.addColorStop(1, a.color2 + '0)');
       ctx.strokeStyle = grad;
-      ctx.lineWidth = thickness * 0.8;
-      ctx.lineCap = 'round';
+      ctx.lineWidth = (thickness - p * 15) * 0.8;
       ctx.stroke();
     }
   }
 
-  // Partículas
-  const particles = Array.from({ length: 80 }, () => ({
-    x: Math.random() * 1920, y: Math.random() * 1080,
+  const particles = Array.from({ length: 60 }, () => ({
+    x: Math.random(), y: Math.random(),
     r: Math.random() * 1.5 + 0.3,
-    speed: Math.random() * 0.3 + 0.05,
-    angle: Math.random() * Math.PI * 2,
-    color: ['#00f5ff','#ff00e5','#8b00ff','#00ffb3','#ffd700'][Math.floor(Math.random()*5)],
+    color: ['#00f5ff','#ff00e5','#8b00ff','#00ffb3','#ffd700'][Math.floor(Math.random() * 5)],
     alpha: Math.random() * 0.6 + 0.2,
-    twinkle: Math.random() * Math.PI * 2
+    tw: Math.random() * Math.PI * 2
   }));
 
   function animate(ts) {
-    t = ts;
     ctx.clearRect(0, 0, W, H);
-    auroras.forEach(drawAurora);
+    auroras.forEach(a => drawAurora(a, ts));
     particles.forEach(p => {
-      p.twinkle += 0.02;
-      const a = p.alpha * (0.5 + 0.5 * Math.sin(p.twinkle));
-      ctx.beginPath();
-      ctx.arc(p.x * W / 1920, p.y * H / 1080, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = p.color.replace(')', `,${a})`).replace('#', 'rgba(') ;
-      // simpler:
-      ctx.globalAlpha = a;
+      p.tw += 0.02;
+      ctx.globalAlpha = p.alpha * (0.5 + 0.5 * Math.sin(p.tw));
       ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = 1;
     });
+    ctx.globalAlpha = 1;
     requestAnimationFrame(animate);
   }
   requestAnimationFrame(animate);
 })();
 
-// [010] INICIALIZACIÓN
+// [009] INICIALIZACIÓN
 document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalysis(); });
 </script>
-
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
