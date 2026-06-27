@@ -101,6 +101,9 @@ body { background: var(--void); color: var(--tx); font-family: var(--ff); font-s
 
 /* NOW BAR */
 .now-bar { padding: .625rem 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 44px; }
+.play-global { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--magenta)); border: none; cursor: pointer; font-size: 14px; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 15px rgba(255,0,229,0.4); transition: box-shadow .2s, transform .1s; }
+.play-global:hover { box-shadow: 0 0 25px rgba(255,0,229,0.7); transform: scale(1.05); }
+.play-global:disabled { opacity: .3; cursor: not-allowed; }
 .now-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .3s; box-shadow: 0 0 8px currentColor; }
 .now-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; }
 .now-name { font-family: var(--fo); font-size: 12px; color: var(--cyan); font-weight: 700; flex: 1; text-shadow: 0 0 10px rgba(0,245,255,.5); letter-spacing: .04em; }
@@ -245,6 +248,7 @@ body { background: var(--void); color: var(--tx); font-family: var(--ff); font-s
     <!-- LEFT: análisis -->
     <div class="left">
       <div class="glass now-bar">
+        <button class="play-global" id="playGlobal" onclick="togglePlay()" title="Play / Pause" disabled>▶</button>
         <div class="now-dot" id="nowDot" style="background:var(--tx3)"></div>
         <span class="now-lbl">NOW:</span>
         <span class="now-name" id="nowName">— ESPERANDO ANÁLISIS —</span>
@@ -340,9 +344,20 @@ function createPlayer(vid) {
       playsinline: 1, enablejsapi: 1
     },
     events: {
-      onReady: e => { e.target.setSize('100%', '100%'); },
+      onReady: e => {
+        e.target.setSize('100%', '100%');
+        const btn = document.getElementById('playGlobal');
+        if (btn) btn.disabled = false;
+      },
       onStateChange: e => {
-        if (e.data === YT.PlayerState.PLAYING) startSync(); else stopSync();
+        const btn = document.getElementById('playGlobal');
+        if (e.data === YT.PlayerState.PLAYING) {
+          startSync();
+          if (btn) btn.textContent = '⏸';
+        } else {
+          stopSync();
+          if (btn) btn.textContent = '▶';
+        }
       },
       onError: () => setStatus('error', '⚠ YouTube bloqueó el video. Desactivá Shields en Brave (ícono del león) para esta página.')
     }
@@ -352,15 +367,31 @@ function createPlayer(vid) {
 function startSync() {
   stopSync();
   syncInterval = setInterval(() => {
-    if (!ytPlayer?.getCurrentTime) return;
+    if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
     const t = Math.max(0, ytPlayer.getCurrentTime() + offsetSecs);
     const sec = getSectionAt(t);
-    if (sec !== currentSection) { currentSection = sec; renderDetail(sec); renderList(); }
+    if (sec !== currentSection) {
+      currentSection = sec;
+      renderDetail(sec);
+      renderList();
+    }
     updateNow(t, sec);
     updateTL(t, sec);
-  }, 200);
+  }, 100);
 }
 function stopSync() { if (syncInterval) { clearInterval(syncInterval); syncInterval = null; } }
+
+function togglePlay() {
+  if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+  const state = ytPlayer.getPlayerState();
+  if (state === YT.PlayerState.PLAYING) {
+    ytPlayer.pauseVideo();
+    document.getElementById('playGlobal').textContent = '▶';
+  } else {
+    ytPlayer.playVideo();
+    document.getElementById('playGlobal').textContent = '⏸';
+  }
+}
 
 function seekTo(i) {
   const t = Math.max(0, SECTIONS[i].start - offsetSecs);
