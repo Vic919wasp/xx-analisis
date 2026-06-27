@@ -409,101 +409,65 @@ async function startAnalysis() {
   showOv(true); setOvStep('IDENTIFICANDO LA CANCIÓN...', 10);
   document.getElementById('btnAnalyze').disabled = true;
 
-  // Prompt con chain-of-thought: primero razona, luego genera JSON
-  const prompt = `Sos un experto en teoría musical con conocimiento enciclopédico de rock, metal progresivo, jazz, pop y todos los géneros.
-
-Video de YouTube ID: ${vid}
-URL: ${url}
-
-PASO 1 — Identificá la canción:
-Basándote en el ID del video de YouTube, identificá el artista y título exacto.
-
-PASO 2 — Analizá desde tu conocimiento musical:
-Una vez identificada, analizá en profundidad:
-- Estructura real de secciones con timestamps aproximados
-- Acordes reales de cada sección (no genéricos, los acordes específicos de la canción)
-- Modo y tonalidad de cada sección
-- Cambios de métrica si los hay
-- BPM aproximado
-- Influencias armónicas (jazz, modal, clásico, etc.)
-
-PASO 3 — Generá el JSON:
-Respondé ÚNICAMENTE con este JSON válido (sin markdown, sin texto extra):
-
-{
-  "title": "título exacto",
-  "artist": "artista exacto",
-  "total_duration": 300,
-  "bpm": 120,
-  "key": "E minor",
-  "sections": [
-    {
-      "id": "01",
-      "name": "nombre descriptivo de la sección",
-      "type": "intro",
-      "start": 0,
-      "end": 20,
-      "time_signature": "4/4",
-      "key": "E minor",
-      "feel": "oscuro / pesado",
-      "bpm": 120,
-      "chords": [
-        {"name": "Em7", "function": "i7", "beats": "2", "type": "modal", "note": "tónica eólica"}
-      ],
-      "rhythm_pattern": [1,0,1,0,1,0,1,0],
-      "rhythm_label": "4/4 · negras · palm mute",
-      "comment": "descripción musical de 2 oraciones sobre esta sección",
-      "harmony": "análisis armónico: modo, función tonal, movimientos no diatónicos",
-      "rhythm_analysis": "análisis rítmico: agrupamiento, cambios métricos, groove",
-      "color": "color sonoro, concepto, influencias musicales",
-      "voicings": "voicings específicos, instrumentación, técnicas"
-    }
-  ]
-}
-
-Reglas estrictas:
-- chord "type" SOLO puede ser: modal, tension, resolve, jazz, bright, neutral
-- "type" de sección SOLO puede ser: intro, riff, verse, chorus, bridge, solo, break, outro, instrumental, precoro
-- rhythm_pattern: array de 0s y 1s (8-16 elementos)
-- start/end en segundos reales aproximados de la canción
-- Identificá TODAS las secciones incluyendo repeticiones (Estrofa 1, Estrofa 2, Coro 1, etc.)
-- Acordes ESPECÍFICOS de la canción, no genéricos
-- Si hay cambios de métrica indicalos: "4/4 → 7/8"
-- Textos máx 150 chars por campo`;
+  const prompt = [
+    'Sos un experto en teoría musical con conocimiento enciclopédico de todos los géneros.',
+    '',
+    'Video de YouTube ID: ' + vid,
+    'URL: ' + url,
+    '',
+    'PASO 1: Identificá el artista y título exacto de este video.',
+    'PASO 2: Analizá la estructura real de la canción con acordes específicos, timestamps, modo, BPM.',
+    'PASO 3: Generá ÚNICAMENTE este JSON (sin markdown, sin texto extra):',
+    '',
+    '{"title":"...","artist":"...","total_duration":300,"bpm":120,"key":"E minor","sections":[',
+    '{"id":"01","name":"nombre sección","type":"intro","start":0,"end":20,',
+    '"time_signature":"4/4","key":"E minor","feel":"oscuro/pesado","bpm":120,',
+    '"chords":[{"name":"Em7","function":"i7","beats":"2","type":"modal","note":"tónica"}],',
+    '"rhythm_pattern":[1,0,1,0,1,0,1,0],"rhythm_label":"4/4 negras",',
+    '"comment":"descripción 2 oraciones","harmony":"análisis armónico",',
+    '"rhythm_analysis":"análisis rítmico","color":"concepto/influencias","voicings":"instrumentación"}',
+    ']}',
+    '',
+    'Reglas: chord type = modal/tension/resolve/jazz/bright/neutral',
+    'section type = intro/riff/verse/chorus/bridge/solo/break/outro/instrumental/precoro',
+    'Incluí TODAS las secciones con repeticiones. Acordes ESPECÍFICOS de la canción.'
+  ].join('\n');
 
   try {
     setOvStep('CONSULTANDO GEMINI...', 30);
 
-    const res = await fetch(
-      \`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${GEMINI_KEY}\`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 16384,
-            responseMimeType: 'application/json'
-          }
-        })
-      }
-    );
+    const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + window.GEMINI_KEY;
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 16384,
+          responseMimeType: 'application/json'
+        }
+      })
+    });
 
     setOvStep('DECODIFICANDO FRECUENCIAS...', 65);
 
     if (!res.ok) {
       const e = await res.json();
-      throw new Error(e.error?.message || \`HTTP \${res.status}\`);
+      throw new Error(e.error ? e.error.message : 'HTTP ' + res.status);
     }
 
     const data = await res.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const raw = data.candidates && data.candidates[0] && data.candidates[0].content &&
+                data.candidates[0].content.parts && data.candidates[0].content.parts[0] ?
+                data.candidates[0].content.parts[0].text : '';
+
     if (!raw) throw new Error('Gemini no devolvió contenido. Intentá de nuevo.');
 
     setOvStep('MATERIALIZANDO ANÁLISIS...', 85);
 
-    let clean = raw.replace(/\`\`\`json|\`\`\`/g, '').trim();
+    let clean = raw.replace(/```json|```/g, '').trim();
     let analysis;
     try {
       analysis = JSON.parse(clean);
@@ -512,15 +476,15 @@ Reglas estrictas:
       analysis = JSON.parse(clean);
     }
 
-    if (!analysis.sections?.length) throw new Error('Sin secciones. Intentá de nuevo.');
+    if (!analysis.sections || !analysis.sections.length) throw new Error('Sin secciones. Intentá de nuevo.');
 
     setOvStep('✦ ANÁLISIS COMPLETO ✦', 100);
     loadAnalysis(analysis, vid);
-    setTimeout(() => showOv(false), 600);
+    setTimeout(function() { showOv(false); }, 600);
 
   } catch(err) {
     showOv(false);
-    setStatus('error', \`⚠ \${err.message}\`);
+    setStatus('error', '⚠ ' + err.message);
   } finally {
     document.getElementById('btnAnalyze').disabled = false;
   }
