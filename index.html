@@ -111,12 +111,59 @@ body { background: var(--void); color: var(--tx); font-family: var(--ff); font-s
 .now-t    { font-family: var(--fo); font-size: 12px; color: var(--aurora1); text-shadow: 0 0 8px var(--aurora1); }
 
 /* TIMELINE */
-.tl-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
-.timeline { display: flex; height: 28px; border-radius: var(--r); overflow: hidden; gap: 1px; background: rgba(0,0,0,.5); box-shadow: 0 0 15px rgba(0,245,255,0.08); }
-.tl-seg  { display: flex; align-items: center; justify-content: center; font-family: var(--fo); font-size: 8px; font-weight: 700; color: rgba(255,255,255,.25); cursor: pointer; position: relative; overflow: hidden; transition: filter .2s; flex-shrink: 0; }
-.tl-seg:hover { filter: brightness(1.8) saturate(1.5); }
-.tl-seg.active { outline: 1.5px solid var(--cyan); outline-offset: -1px; z-index: 2; color: var(--cyan); }
-.tl-prog { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,0.2); pointer-events: none; }
+.tl-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+.tl-edit-hint { font-size: 9px; color: var(--tx3); font-style: italic; display: none; }
+.tl-edit-hint.show { display: block; }
+
+/* Timeline editable */
+.timeline-wrap { position: relative; }
+.timeline {
+  position: relative; height: 48px; border-radius: var(--r);
+  background: rgba(0,0,0,.6); box-shadow: 0 0 15px rgba(0,245,255,0.08);
+  overflow: hidden; cursor: default;
+}
+.tl-playhead {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--cyan); z-index: 10; pointer-events: none;
+  box-shadow: 0 0 6px var(--cyan);
+}
+.tl-playhead::after {
+  content: ''; position: absolute; top: 0; left: -4px;
+  border: 5px solid transparent; border-top-color: var(--cyan);
+}
+.tl-seg {
+  position: absolute; top: 2px; bottom: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fo); font-size: 8px; font-weight: 700;
+  color: rgba(255,255,255,.5); border-radius: 4px;
+  cursor: pointer; user-select: none; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: border-color .15s;
+}
+.tl-seg:hover { border-color: rgba(255,255,255,0.4); color: #fff; z-index: 5; }
+.tl-seg.active { border-color: var(--cyan); color: var(--cyan); z-index: 6; box-shadow: inset 0 0 10px rgba(0,245,255,0.15); }
+.tl-seg.dragging { z-index: 20; opacity: .85; box-shadow: 0 0 20px rgba(0,245,255,0.4); border-color: var(--cyan); }
+.tl-seg-label { font-size: 8px; pointer-events: none; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
+/* Handles para resize */
+.tl-handle {
+  position: absolute; top: 0; bottom: 0; width: 8px;
+  cursor: ew-resize; z-index: 7; opacity: 0;
+  transition: opacity .2s;
+}
+.tl-handle:hover, .tl-seg:hover .tl-handle { opacity: 1; }
+.tl-handle-l { left: 0; background: linear-gradient(90deg, rgba(0,245,255,.4), transparent); border-radius: 4px 0 0 4px; }
+.tl-handle-r { right: 0; background: linear-gradient(270deg, rgba(0,245,255,.4), transparent); border-radius: 0 4px 4px 0; }
+.tl-prog { display: none; }
+
+/* Tooltip de tiempo al editar */
+.tl-tooltip {
+  position: absolute; bottom: 54px; background: rgba(0,0,0,.9);
+  border: 0.5px solid var(--cyan); border-radius: var(--r);
+  font-family: var(--fo); font-size: 9px; color: var(--cyan);
+  padding: 3px 7px; pointer-events: none; z-index: 30;
+  transform: translateX(-50%); white-space: nowrap;
+  box-shadow: 0 0 8px rgba(0,245,255,.3);
+}
 
 /* DETAIL */
 .detail { overflow: hidden; }
@@ -284,9 +331,15 @@ body { background: var(--void); color: var(--tx); font-family: var(--ff); font-s
       </div>
       <div class="cal-progress" id="calProgress"></div>
 
-      <div>
-        <div class="tl-lbl">▸ MAPA DE SECCIONES · CLICK PARA SALTAR</div>
-        <div class="timeline" id="timeline"></div>
+      <div class="timeline-wrap">
+        <div class="tl-lbl">
+          <span>▸ MAPA DE SECCIONES</span>
+          <span class="tl-edit-hint" id="tlHint">↔ arrastrá los bordes para editar · click para saltar</span>
+        </div>
+        <div class="timeline" id="timeline">
+          <div class="tl-playhead" id="tlPlayhead" style="left:0%"></div>
+          <div class="tl-tooltip" id="tlTooltip" style="display:none"></div>
+        </div>
       </div>
 
       <div class="glass detail" id="detail">
@@ -589,27 +642,110 @@ function updateNow(t, i) {
 }
 
 function buildTL() {
-  document.getElementById('timeline').innerHTML = SECTIONS.map((s, i) => {
-    const w = ((s.end - s.start) / TOTAL) * 100;
-    return `<div class="tl-seg" id="tls${i}" style="width:${w}%;background:${gc(s.type)}"
-      onclick="seekTo(${i})" title="${s.id} · ${s.name}">
-      <div class="tl-prog" id="tlp${i}" style="width:0%"></div>
-      <span>${s.id}</span>
-    </div>`;
-  }).join('');
+  const tl = document.getElementById('timeline');
+  // conservar playhead y tooltip
+  const ph = document.getElementById('tlPlayhead');
+  const tt = document.getElementById('tlTooltip');
+  tl.innerHTML = '';
+  tl.appendChild(ph);
+  tl.appendChild(tt);
+
+  SECTIONS.forEach((s, i) => {
+    const left = (s.start / TOTAL) * 100;
+    const w    = ((s.end - s.start) / TOTAL) * 100;
+    const seg  = document.createElement('div');
+    seg.className = 'tl-seg';
+    seg.id = 'tls' + i;
+    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gc(s.type);
+    seg.innerHTML =
+      '<div class="tl-handle tl-handle-l" data-seg="' + i + '" data-side="l"></div>' +
+      '<span class="tl-seg-label">' + s.id + '</span>' +
+      '<div class="tl-handle tl-handle-r" data-seg="' + i + '" data-side="r"></div>';
+    seg.addEventListener('click', function(e) {
+      if (!e.target.classList.contains('tl-handle')) seekTo(i);
+    });
+    tl.appendChild(seg);
+  });
+
+  // mostrar hint de edición
+  document.getElementById('tlHint').classList.add('show');
+  initTLDrag();
 }
 
 function updateTL(t, cur) {
+  // mover playhead
+  const pct = Math.min(100, (t / TOTAL) * 100);
+  const ph = document.getElementById('tlPlayhead');
+  if (ph) ph.style.left = pct + '%';
+
   SECTIONS.forEach((s, i) => {
-    const prog = document.getElementById(`tlp${i}`);
-    const seg  = document.getElementById(`tls${i}`);
-    if (!prog || !seg) return;
-    if (i < cur) { prog.style.width = '100%'; seg.style.outline = 'none'; }
-    else if (i === cur) {
-      prog.style.width = Math.min(100, Math.max(0, ((t - s.start) / Math.max(1, s.end - s.start)) * 100)) + '%';
-      seg.style.outline = '1.5px solid var(--cyan)'; seg.style.outlineOffset = '-1px'; seg.style.zIndex = '2';
-    } else { prog.style.width = '0%'; seg.style.outline = 'none'; seg.style.zIndex = '1'; }
+    const seg = document.getElementById('tls' + i);
+    if (!seg) return;
+    if (i === cur) seg.classList.add('active');
+    else seg.classList.remove('active');
   });
+}
+
+function initTLDrag() {
+  const tl = document.getElementById('timeline');
+  let dragging = null; // {segIdx, side, startX, origStart, origEnd}
+
+  function pxToSec(px) {
+    return (px / tl.getBoundingClientRect().width) * TOTAL;
+  }
+
+  tl.addEventListener('mousedown', function(e) {
+    const handle = e.target.closest('.tl-handle');
+    if (!handle) return;
+    e.preventDefault();
+    const i    = parseInt(handle.dataset.seg);
+    const side = handle.dataset.side;
+    dragging = { i, side, startX: e.clientX, origStart: SECTIONS[i].start, origEnd: SECTIONS[i].end };
+    document.getElementById('tls' + i).classList.add('dragging');
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    const dx      = e.clientX - dragging.startX;
+    const tlRect  = tl.getBoundingClientRect();
+    const deltaSec = (dx / tlRect.width) * TOTAL;
+    const i = dragging.i;
+    const tt = document.getElementById('tlTooltip');
+
+    if (dragging.side === 'l') {
+      const newStart = Math.max(0, Math.min(dragging.origStart + deltaSec, SECTIONS[i].end - 1));
+      SECTIONS[i].start = newStart;
+      if (i > 0) SECTIONS[i-1].end = newStart;
+      if (tt) { tt.style.display = 'block'; tt.style.left = ((newStart/TOTAL)*100) + '%'; tt.textContent = fmt(newStart); }
+    } else {
+      const newEnd = Math.min(TOTAL, Math.max(dragging.origEnd + deltaSec, SECTIONS[i].start + 1));
+      SECTIONS[i].end = newEnd;
+      if (i < SECTIONS.length - 1) SECTIONS[i+1].start = newEnd;
+      if (tt) { tt.style.display = 'block'; tt.style.left = ((newEnd/TOTAL)*100) + '%'; tt.textContent = fmt(newEnd); }
+    }
+    // actualizar posición visual del segmento
+    refreshSegPos(i);
+    if (dragging.side === 'l' && i > 0) refreshSegPos(i-1);
+    if (dragging.side === 'r' && i < SECTIONS.length-1) refreshSegPos(i+1);
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    document.getElementById('tls' + dragging.i).classList.remove('dragging');
+    const tt = document.getElementById('tlTooltip');
+    if (tt) tt.style.display = 'none';
+    dragging = null;
+    renderList();
+  });
+}
+
+function refreshSegPos(i) {
+  const seg = document.getElementById('tls' + i);
+  if (!seg || !SECTIONS[i]) return;
+  const left = (SECTIONS[i].start / TOTAL) * 100;
+  const w    = ((SECTIONS[i].end - SECTIONS[i].start) / TOTAL) * 100;
+  seg.style.left  = left + '%';
+  seg.style.width = w + '%';
 }
 
 function renderList() {
