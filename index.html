@@ -191,6 +191,23 @@ body { background: var(--void); color: var(--tx); font-family: var(--ff); font-s
 .sync-bar button:hover { border-color: var(--magenta); color: var(--magenta); }
 .footer { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .06em; padding-top: .5rem; text-align: center; }
 
+/* CALIBRACIÓN */
+.cal-bar { display: none; align-items: center; gap: 8px; padding: .625rem 1rem; flex-wrap: wrap; }
+.cal-bar.active { display: flex; }
+.cal-title { font-family: var(--fo); font-size: 10px; color: var(--gold); letter-spacing: .08em; text-shadow: 0 0 8px var(--gold); }
+.cal-info { font-family: var(--fo); font-size: 11px; color: var(--cyan); flex: 1; text-shadow: 0 0 6px var(--cyan); }
+.cal-next { font-size: 10px; color: var(--tx2); font-family: var(--fo); }
+.btn-cal { padding: 6px 14px; border: none; border-radius: var(--r); cursor: pointer; font-family: var(--fo); font-size: 10px; font-weight: 700; letter-spacing: .06em; transition: all .15s; }
+.btn-cal-start { background: linear-gradient(135deg, var(--aurora1), var(--aurora4)); color: #000; box-shadow: 0 0 12px rgba(0,255,179,0.4); }
+.btn-cal-mark  { background: linear-gradient(135deg, var(--gold), var(--magenta)); color: #000; box-shadow: 0 0 12px rgba(255,215,0,0.5); font-size: 12px; padding: 8px 18px; }
+.btn-cal-end   { background: rgba(255,255,255,0.08); color: var(--tx2); border: 0.5px solid var(--bd2); }
+.btn-cal:hover { filter: brightness(1.2); transform: scale(1.02); }
+.cal-progress { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; }
+.cal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tx3); transition: background .3s; }
+.cal-dot.done { background: var(--aurora1); box-shadow: 0 0 6px var(--aurora1); }
+.cal-dot.current { background: var(--gold); box-shadow: 0 0 8px var(--gold); animation: pulse-dot 1s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+
 /* OVERLAY */
 .ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 .ov.show { display: flex; }
@@ -256,6 +273,17 @@ body { background: var(--void); color: var(--tx); font-family: var(--ff); font-s
         <span class="now-t" id="nowTime">0:00</span>
       </div>
 
+      <!-- CALIBRACIÓN -->
+      <div class="glass cal-bar" id="calBar">
+        <span class="cal-title">◈ CALIBRAR</span>
+        <span class="cal-info" id="calInfo">Presioná START y clickeá MARCAR al inicio de cada sección</span>
+        <span class="cal-next" id="calNext"></span>
+        <button class="btn-cal btn-cal-start" id="btnCalStart" onclick="startCalibration()">▶ START</button>
+        <button class="btn-cal btn-cal-mark" id="btnCalMark" onclick="markSection()" style="display:none">⏱ MARCAR SECCIÓN</button>
+        <button class="btn-cal btn-cal-end" id="btnCalEnd" onclick="endCalibration()" style="display:none">✓ FIN</button>
+      </div>
+      <div class="cal-progress" id="calProgress"></div>
+
       <div>
         <div class="tl-lbl">▸ MAPA DE SECCIONES · CLICK PARA SALTAR</div>
         <div class="timeline" id="timeline"></div>
@@ -289,7 +317,9 @@ body { background: var(--void); color: var(--tx); font-family: var(--ff); font-s
 
       <!-- Secciones -->
       <div class="glass-mag right" style="flex:1">
-        <div class="rh-hdr">SECCIONES <span id="secCount">—</span></div>
+        <div class="rh-hdr">SECCIONES <span id="secCount">—</span>
+        <button class="btn-cal btn-cal-start" id="btnOpenCal" onclick="openCalibration()" style="display:none;padding:3px 8px;font-size:9px">◈ CALIBRAR</button>
+      </div>
         <div class="slist" id="slist">
           <div class="slist-empty">PEGÁ UNA URL<br>Y ANALIZÁ</div>
         </div>
@@ -526,6 +556,7 @@ function loadAnalysis(data, vid) {
   TOTAL = data.total_duration || SECTIONS[SECTIONS.length - 1]?.end || 300;
   currentSection = 0;
   document.getElementById('mainGrid').style.display = 'grid';
+  document.getElementById('btnOpenCal').style.display = 'flex';
   hideStatus();
   buildTL(); renderList(); renderDetail(0); updateNow(0, 0); updateTL(0, 0);
   if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
@@ -714,6 +745,117 @@ function renderDetail(i) {
 })();
 
 // [009] INICIALIZACIÓN
+// ============================================================
+// CALIBRACIÓN DE TIMESTAMPS
+// ============================================================
+let calMode = false;
+let calIndex = 0;
+let calTimestamps = [];
+
+function openCalibration() {
+  const bar = document.getElementById('calBar');
+  bar.classList.toggle('active');
+  if (bar.classList.contains('active')) {
+    buildCalProgress();
+    document.getElementById('calInfo').textContent = 'Presioná START, dale play al video y clickeá MARCAR al inicio de cada sección';
+  }
+}
+
+function buildCalProgress() {
+  document.getElementById('calProgress').innerHTML = SECTIONS.map((s, i) =>
+    '<div class="cal-dot" id="caldot' + i + '" title="' + s.name + '"></div>'
+  ).join('');
+}
+
+function startCalibration() {
+  calMode = true;
+  calIndex = 0;
+  calTimestamps = new Array(SECTIONS.length).fill(null);
+
+  document.getElementById('btnCalStart').style.display = 'none';
+  document.getElementById('btnCalMark').style.display = 'flex';
+  document.getElementById('btnCalEnd').style.display = 'flex';
+
+  updateCalUI();
+
+  // Arrancar video desde el principio
+  if (ytPlayer && ytPlayer.seekTo) {
+    ytPlayer.seekTo(0, true);
+    ytPlayer.playVideo();
+  }
+}
+
+function markSection() {
+  if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+  const t = ytPlayer.getCurrentTime();
+
+  calTimestamps[calIndex] = t;
+
+  // Marcar dot como done
+  const dot = document.getElementById('caldot' + calIndex);
+  if (dot) { dot.classList.remove('current'); dot.classList.add('done'); }
+
+  calIndex++;
+
+  if (calIndex >= SECTIONS.length) {
+    endCalibration();
+  } else {
+    updateCalUI();
+  }
+}
+
+function updateCalUI() {
+  const s = SECTIONS[calIndex];
+  if (!s) return;
+
+  document.getElementById('calInfo').textContent =
+    'Sección ' + (calIndex + 1) + ' / ' + SECTIONS.length + ': escuchá cuando empieza...';
+  document.getElementById('calNext').textContent = '→ ' + s.name;
+
+  // Marcar dot actual
+  const dot = document.getElementById('caldot' + calIndex);
+  if (dot) dot.classList.add('current');
+}
+
+function endCalibration() {
+  calMode = false;
+
+  // Aplicar timestamps calibrados
+  let applied = 0;
+  calTimestamps.forEach((t, i) => {
+    if (t !== null && SECTIONS[i]) {
+      SECTIONS[i].start = t;
+      if (i > 0 && calTimestamps[i-1] !== null) {
+        SECTIONS[i-1].end = t;
+      }
+      applied++;
+    }
+  });
+
+  // Último end = total duration
+  if (ytPlayer && ytPlayer.getDuration) {
+    const dur = ytPlayer.getDuration();
+    if (dur > 0) SECTIONS[SECTIONS.length - 1].end = dur;
+  }
+
+  // Reconstruir timeline con nuevos timestamps
+  buildTL();
+  renderList();
+
+  // Reset UI
+  document.getElementById('btnCalStart').style.display = 'flex';
+  document.getElementById('btnCalMark').style.display = 'none';
+  document.getElementById('btnCalEnd').style.display = 'none';
+  document.getElementById('calInfo').textContent = '✦ Calibración aplicada · ' + applied + ' secciones actualizadas';
+  document.getElementById('calNext').textContent = '';
+
+  // Marcar todos los dots como done
+  SECTIONS.forEach((s, i) => {
+    const dot = document.getElementById('caldot' + i);
+    if (dot) { dot.classList.remove('current'); dot.classList.add('done'); }
+  });
+}
+
 document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalysis(); });
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
