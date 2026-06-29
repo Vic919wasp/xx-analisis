@@ -1,409 +1,671 @@
 <!-- ============================================================
-     CONTEXTO: XX Analysis — Psicodélico Cósmico
-     Analizador armónico/rítmico con estética de aurora boreal.
-     Gemini 2.5 Flash API + YouTube IFrame sync.
+     XX Analysis v2 — Estética Dream Theater
+     Video + Timeline editable + Base de datos compartida
      ============================================================
      ÍNDICE DE NAVEGACIÓN
      [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
-     [003] ESTRUCTURA HTML      - línea 285
-     [004] DATOS Y ESTADO       - línea 385
-     [005] YOUTUBE API          - línea 425
-     [006] GEMINI API           - línea 475
-     [007] RENDER UI            - línea 560
-     [008] AURORA ANIMATION     - línea 660
-     [009] INICIALIZACIÓN       - línea 710
+     [003] HTML — VISTAS        - línea 310
+     [004] DATOS Y ESTADO       - línea 460
+     [005] AUTH                 - línea 510
+     [006] YOUTUBE API          - línea 560
+     [007] GEMINI / ANALIZAR    - línea 610
+     [008] TIMELINE DRAG        - línea 680
+     [009] BIBLIOTECA           - línea 760
+     [010] RENDER UI            - línea 820
+     [011] INICIALIZACIÓN       - línea 940
      ============================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XX Analysis — Cosmic Music Analyzer</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<title>XX Analysis — Music Theory Database</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Raleway:ital,wght@0,300;0,400;0,500;1,300&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* [002] ESTILOS CSS */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --void:    #03000a;
-  --deep:    #080514;
-  --surface: rgba(10,4,25,0.88);
-  --glass:   rgba(255,255,255,0.04);
-  --glass2:  rgba(255,255,255,0.08);
-  --cyan:    #00f5ff;
-  --magenta: #ff00e5;
-  --violet:  #8b00ff;
-  --aurora1: #00ffb3;
-  --aurora2: #ff006e;
-  --aurora3: #7700ff;
-  --aurora4: #00d4ff;
-  --gold:    #ffd700;
-  --tx:  #e8f4ff;
-  --tx2: #7a9bb5;
-  --tx3: #3a4a5a;
-  --bd:  rgba(0,245,255,0.12);
-  --bd2: rgba(0,245,255,0.25);
-  --bd3: rgba(255,0,229,0.2);
-  --r: 8px; --rl: 14px;
-  --ff: 'Exo 2', sans-serif;
-  --fo: 'Orbitron', monospace;
+  /* Paleta Dream Theater: negros, grises oscuros, dorado, plata */
+  --void:    #000000;
+  --deep:    #0a0a0a;
+  --surface: #111111;
+  --surface2: #181818;
+  --surface3: #222222;
+  --border:  rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --gold:    #b8962e;
+  --gold2:   #d4af58;
+  --gold3:   #f0cc7a;
+  --silver:  #9aa0a6;
+  --silver2: #c8cdd2;
+  --tx:      #e8e4dc;
+  --tx2:     #8a8680;
+  --tx3:     #4a4845;
+  --red:     #8b2020;
+  --cyan:    #2a6b7c;
+  --green:   #2a6b3a;
+  --purple:  #5a2a7c;
+  --r:  4px;
+  --rl: 6px;
+  --fc: 'Cinzel', serif;        /* títulos */
+  --fr: 'Raleway', sans-serif;  /* body */
+  --fm: 'Source Code Pro', monospace; /* datos */
 }
-body { background: var(--void); color: var(--tx); font-family: var(--ff); font-size: 13px; line-height: 1.5; min-height: 100vh; overflow-x: hidden; }
-#cosmos { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-.stars { position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.8) 0%, transparent 100%),
-    radial-gradient(1px 1px at 30% 60%, rgba(200,220,255,.6) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,.9) 0%, transparent 100%),
-    radial-gradient(1px 1px at 70% 80%, rgba(180,200,255,.7) 0%, transparent 100%),
-    radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,.8) 0%, transparent 100%),
-    radial-gradient(1px 1px at 15% 85%, rgba(200,180,255,.6) 0%, transparent 100%),
-    radial-gradient(2px 2px at 80% 15%, rgba(255,240,200,.9) 0%, transparent 100%),
-    radial-gradient(1px 1px at 45% 70%, rgba(255,255,255,.7) 0%, transparent 100%),
-    radial-gradient(1px 1px at 60% 45%, rgba(180,255,240,.6) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255,200,255,.8) 0%, transparent 100%); }
-.app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-.glass     { background: var(--surface); border: 0.5px solid var(--bd2); border-radius: var(--rl); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(0,245,255,0.06), inset 0 0 20px rgba(0,0,0,0.3); }
-.glass-mag { background: var(--surface); border: 0.5px solid var(--bd3); border-radius: var(--rl); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 0 30px rgba(255,0,229,0.06), inset 0 0 20px rgba(0,0,0,0.3); }
+body { background: var(--void); color: var(--tx); font-family: var(--fr); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--deep); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+/* LAYOUT */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
 
 /* HEADER */
-.hd { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; flex-wrap: wrap; gap: 8px; }
-.logo { font-family: var(--fo); font-size: 26px; font-weight: 900; letter-spacing: .15em; background: linear-gradient(135deg, var(--cyan) 0%, var(--magenta) 50%, var(--violet) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 20px rgba(0,245,255,0.5)); }
-.logo-sub { font-size: 10px; color: var(--tx2); margin-top: 2px; font-family: var(--fo); letter-spacing: .1em; }
-.cosmic-badge { font-family: var(--fo); font-size: 9px; letter-spacing: .1em; padding: 4px 10px; border-radius: var(--r); border: 0.5px solid var(--bd2); background: rgba(0,245,255,0.08); color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+.header {
+  background: var(--deep);
+  border-bottom: 1px solid var(--gold);
+  padding: .75rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  font-family: var(--fc); font-size: 20px; font-weight: 700;
+  letter-spacing: .2em; color: var(--gold2);
+  text-shadow: 0 0 20px rgba(184,150,46,0.3);
+}
+.logo span { color: var(--silver2); font-weight: 400; }
+.logo-sub { font-size: 9px; color: var(--tx3); letter-spacing: .15em; margin-top: 1px; font-family: var(--fr); font-weight: 300; }
+.nav { display: flex; gap: 4px; align-items: center; }
+.nav-btn {
+  padding: 5px 12px; background: transparent;
+  border: 1px solid var(--border2); border-radius: var(--r);
+  color: var(--tx2); cursor: pointer; font-family: var(--fr);
+  font-size: 11px; letter-spacing: .06em; transition: all .2s;
+}
+.nav-btn:hover { border-color: var(--gold); color: var(--gold2); }
+.nav-btn.active { border-color: var(--gold); color: var(--gold2); background: rgba(184,150,46,0.08); }
+.user-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border: 1px solid var(--border2); border-radius: 20px;
+  font-size: 11px; color: var(--tx2); cursor: pointer; transition: all .2s;
+}
+.user-chip:hover { border-color: var(--gold); }
+.user-avatar {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; color: #000;
+}
 
-/* INPUT */
-.input-panel { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: .75rem; }
-.ip-row { display: flex; gap: 8px; align-items: center; }
-.url-input { flex: 1; background: rgba(0,0,0,0.4); border: 0.5px solid var(--bd2); border-radius: var(--r); color: var(--cyan); font-family: var(--fo); font-size: 11px; letter-spacing: .04em; padding: 9px 12px; outline: none; transition: border-color .2s, box-shadow .2s; }
-.url-input:focus { border-color: var(--magenta); box-shadow: 0 0 15px rgba(255,0,229,0.2); }
+/* VIEWS */
+.view { display: none; flex: 1; }
+.view.active { display: flex; flex-direction: column; }
+
+/* ── AUTH VIEW ── */
+.auth-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, #0d0a06 0%, #000 70%);
+  padding: 2rem;
+}
+.auth-box {
+  width: 100%; max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--gold);
+  border-radius: var(--rl);
+  padding: 2rem;
+  box-shadow: 0 0 40px rgba(184,150,46,0.1);
+}
+.auth-title {
+  font-family: var(--fc); font-size: 18px; color: var(--gold2);
+  letter-spacing: .15em; margin-bottom: 4px; text-align: center;
+}
+.auth-sub { font-size: 11px; color: var(--tx3); text-align: center; margin-bottom: 1.5rem; letter-spacing: .06em; }
+.auth-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border: 1px solid var(--border2); border-radius: var(--r); overflow: hidden; }
+.auth-tab {
+  flex: 1; padding: 7px; text-align: center; cursor: pointer;
+  font-size: 11px; letter-spacing: .08em; color: var(--tx3);
+  background: transparent; border: none; transition: all .2s;
+}
+.auth-tab.active { background: var(--gold); color: #000; font-weight: 600; }
+.field { margin-bottom: .875rem; }
+.field label { display: block; font-size: 10px; color: var(--tx3); letter-spacing: .08em; margin-bottom: 4px; }
+.field input {
+  width: 100%; background: var(--deep); border: 1px solid var(--border2);
+  border-radius: var(--r); color: var(--tx); font-family: var(--fm);
+  font-size: 12px; padding: 8px 10px; outline: none; transition: border-color .2s;
+}
+.field input:focus { border-color: var(--gold); }
+.btn-primary {
+  width: 100%; padding: 9px; background: var(--gold); color: #000;
+  border: none; border-radius: var(--r); cursor: pointer;
+  font-family: var(--fc); font-size: 12px; font-weight: 600;
+  letter-spacing: .1em; transition: all .2s; margin-top: .5rem;
+}
+.btn-primary:hover { background: var(--gold2); box-shadow: 0 0 15px rgba(184,150,46,0.4); }
+.btn-secondary {
+  padding: 7px 14px; background: transparent; color: var(--tx2);
+  border: 1px solid var(--border2); border-radius: var(--r);
+  cursor: pointer; font-family: var(--fr); font-size: 11px;
+  letter-spacing: .06em; transition: all .2s;
+}
+.btn-secondary:hover { border-color: var(--gold); color: var(--gold2); }
+.auth-error { font-size: 11px; color: #c84b4b; margin-top: .5rem; text-align: center; }
+
+/* ── ANALYZER VIEW ── */
+.analyzer { flex: 1; display: flex; flex-direction: column; }
+
+/* Input bar */
+.input-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: .625rem 1rem; display: flex; gap: 8px; align-items: center;
+}
+.url-input {
+  flex: 1; background: var(--deep); border: 1px solid var(--border2);
+  border-radius: var(--r); color: var(--tx); font-family: var(--fm);
+  font-size: 12px; padding: 7px 10px; outline: none; transition: border-color .2s;
+}
+.url-input:focus { border-color: var(--gold); }
 .url-input::placeholder { color: var(--tx3); }
-.btn-cosmic { padding: 9px 20px; border: none; border-radius: var(--r); cursor: pointer; font-family: var(--fo); font-size: 11px; font-weight: 700; letter-spacing: .08em; background: linear-gradient(135deg, var(--violet), var(--magenta)); color: #fff; white-space: nowrap; box-shadow: 0 0 20px rgba(255,0,229,0.4); transition: box-shadow .2s, transform .1s; }
-.btn-cosmic:hover { box-shadow: 0 0 30px rgba(255,0,229,0.7); transform: translateY(-1px); }
-.btn-cosmic:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
-.hint { font-size: 10px; color: var(--tx3); font-style: italic; }
-.status { font-size: 11px; padding: 7px 12px; border-radius: var(--r); display: none; font-family: var(--fo); letter-spacing: .04em; }
-.status.loading { background: rgba(0,245,255,0.08); color: var(--cyan); border: 0.5px solid var(--bd2); display: block; }
-.status.error   { background: rgba(255,0,100,0.1); color: #ff6090; border: 0.5px solid rgba(255,0,100,0.3); display: block; }
-.spinner { display: inline-block; animation: spin 1s linear infinite; margin-right: 5px; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.btn-analyze {
+  padding: 7px 16px; background: var(--gold); color: #000; border: none;
+  border-radius: var(--r); cursor: pointer; font-family: var(--fc);
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; transition: all .2s;
+  white-space: nowrap;
+}
+.btn-analyze:hover { background: var(--gold2); }
+.btn-analyze:disabled { opacity: .4; cursor: not-allowed; }
+.btn-save {
+  padding: 7px 12px; background: transparent; color: var(--gold);
+  border: 1px solid var(--gold); border-radius: var(--r); cursor: pointer;
+  font-family: var(--fr); font-size: 11px; letter-spacing: .06em; transition: all .2s;
+  white-space: nowrap; display: none;
+}
+.btn-save:hover { background: rgba(184,150,46,0.1); }
+.btn-save.show { display: block; }
 
-/* MAIN */
-.main { display: grid; grid-template-columns: 1fr 280px; gap: 1rem; }
-.left { display: flex; flex-direction: column; gap: .875rem; }
+/* STATUS */
+.status-bar { padding: 4px 1rem; font-size: 11px; display: none; }
+.status-bar.loading { background: rgba(184,150,46,0.08); color: var(--gold2); display: block; }
+.status-bar.error   { background: rgba(139,32,32,0.15); color: #e07070; display: block; }
+.status-bar.success { background: rgba(42,107,58,0.15); color: #70c080; display: block; }
 
-/* VIDEO */
-.video-wrap { position: relative; width: 100%; padding-top: 0; height: 160px; background: #000; border-radius: var(--r); overflow: hidden; border: 0.5px solid var(--bd2); box-shadow: 0 0 20px rgba(0,245,255,0.1); flex-shrink: 0; }
-.video-wrap > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
-.video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
-.vph { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--tx3); }
-.vph .big { font-size: 48px; filter: drop-shadow(0 0 10px var(--cyan)); }
-.vph span { font-family: var(--fo); font-size: 11px; letter-spacing: .08em; color: var(--tx2); }
+/* VIDEO SECTION */
+.video-section { background: #000; position: relative; }
+.video-wrap { position: relative; width: 100%; padding-top: 46%; background: #000; }
+.video-wrap > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.video-wrap iframe { width: 100%; height: 100%; border: none; }
+.video-placeholder {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  color: var(--tx3); background: #000;
+}
+.vph-icon { font-family: var(--fc); font-size: 48px; color: var(--gold); opacity: .3; }
+.vph-text { font-size: 12px; letter-spacing: .1em; }
 
-/* NOW BAR */
-.now-bar { padding: .625rem 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 44px; }
-.play-global { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--violet), var(--magenta)); border: none; cursor: pointer; font-size: 14px; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 15px rgba(255,0,229,0.4); transition: box-shadow .2s, transform .1s; }
-.play-global:hover { box-shadow: 0 0 25px rgba(255,0,229,0.7); transform: scale(1.05); }
-.play-global:disabled { opacity: .3; cursor: not-allowed; }
-.now-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background .3s; box-shadow: 0 0 8px currentColor; }
-.now-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; }
-.now-name { font-family: var(--fo); font-size: 12px; color: var(--cyan); font-weight: 700; flex: 1; text-shadow: 0 0 10px rgba(0,245,255,.5); letter-spacing: .04em; }
-.now-m    { font-family: var(--fo); font-size: 9px; padding: 2px 7px; border-radius: var(--r); border: 0.5px solid var(--magenta); background: rgba(255,0,229,0.1); color: var(--magenta); letter-spacing: .06em; text-shadow: 0 0 8px var(--magenta); }
-.now-t    { font-family: var(--fo); font-size: 12px; color: var(--aurora1); text-shadow: 0 0 8px var(--aurora1); }
+/* TRANSPORT BAR */
+.transport {
+  background: var(--surface); border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: .5rem 1rem; display: flex; align-items: center; gap: 10px;
+}
+.btn-play {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--gold); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: #000; flex-shrink: 0; transition: all .2s;
+}
+.btn-play:hover { background: var(--gold2); box-shadow: 0 0 10px rgba(184,150,46,0.4); }
+.btn-play:disabled { opacity: .3; cursor: not-allowed; }
+.now-section {
+  font-family: var(--fc); font-size: 12px; color: var(--gold2);
+  letter-spacing: .06em; flex: 1; min-width: 0; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.now-meta { font-family: var(--fm); font-size: 10px; color: var(--tx3); }
+.now-time { font-family: var(--fm); font-size: 13px; color: var(--silver2); min-width: 40px; }
+.sync-label { font-size: 10px; color: var(--tx3); }
+.sync-slider { accent-color: var(--gold); width: 80px; }
+.sync-val { font-family: var(--fm); font-size: 10px; color: var(--gold); min-width: 32px; }
 
 /* TIMELINE */
-.tl-lbl  { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-.tl-edit-hint { font-size: 9px; color: var(--tx3); font-style: italic; display: none; }
-.tl-edit-hint.show { display: block; }
-
-/* Timeline editable */
-.timeline-wrap { position: relative; }
+.timeline-section { padding: .5rem 1rem; background: var(--deep); border-bottom: 1px solid var(--border); }
+.tl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.tl-title { font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; }
+.tl-hint { font-size: 9px; color: var(--tx3); font-style: italic; }
 .timeline {
-  position: relative; height: 48px; border-radius: var(--r);
-  background: rgba(0,0,0,.6); box-shadow: 0 0 15px rgba(0,245,255,0.08);
-  overflow: hidden; cursor: default;
+  position: relative; height: 44px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer;
 }
 .tl-playhead {
-  position: absolute; top: 0; bottom: 0; width: 2px;
-  background: var(--cyan); z-index: 10; pointer-events: none;
-  box-shadow: 0 0 6px var(--cyan);
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: var(--gold); z-index: 10; pointer-events: none;
 }
 .tl-playhead::after {
   content: ''; position: absolute; top: 0; left: -4px;
-  border: 5px solid transparent; border-top-color: var(--cyan);
+  border: 4px solid transparent; border-top-color: var(--gold);
 }
 .tl-seg {
   position: absolute; top: 2px; bottom: 2px;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--fo); font-size: 8px; font-weight: 700;
-  color: rgba(255,255,255,.5); border-radius: 4px;
-  cursor: pointer; user-select: none; overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.1);
+  font-family: var(--fm); font-size: 8px; color: rgba(255,255,255,.4);
+  border-radius: 3px; cursor: pointer; user-select: none;
+  border: 1px solid rgba(255,255,255,0.08); overflow: hidden;
   transition: border-color .15s;
 }
-.tl-seg:hover { border-color: rgba(255,255,255,0.4); color: #fff; z-index: 5; }
-.tl-seg.active { border-color: var(--cyan); color: var(--cyan); z-index: 6; box-shadow: inset 0 0 10px rgba(0,245,255,0.15); }
-.tl-seg.dragging { z-index: 20; opacity: .85; box-shadow: 0 0 20px rgba(0,245,255,0.4); border-color: var(--cyan); }
-.tl-seg-label { font-size: 8px; pointer-events: none; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
-/* Handles para resize */
+.tl-seg:hover { border-color: rgba(255,255,255,.3); color: #fff; z-index: 5; }
+.tl-seg.active { border-color: var(--gold); color: var(--gold2); z-index: 6; }
+.tl-seg.dragging { z-index: 20; opacity: .8; border-color: var(--gold2); }
 .tl-handle {
-  position: absolute; top: 0; bottom: 0; width: 8px;
-  cursor: ew-resize; z-index: 7; opacity: 0;
-  transition: opacity .2s;
+  position: absolute; top: 0; bottom: 0; width: 6px; cursor: ew-resize;
+  z-index: 7; transition: background .15s;
 }
-.tl-handle:hover, .tl-seg:hover .tl-handle { opacity: 1; }
-.tl-handle-l { left: 0; background: linear-gradient(90deg, rgba(0,245,255,.4), transparent); border-radius: 4px 0 0 4px; }
-.tl-handle-r { right: 0; background: linear-gradient(270deg, rgba(0,245,255,.4), transparent); border-radius: 0 4px 4px 0; }
-.tl-prog { display: none; }
-
-/* Tooltip de tiempo al editar */
+.tl-handle-l { left: 0; }
+.tl-handle-r { right: 0; }
+.tl-seg:hover .tl-handle-l { background: linear-gradient(90deg, rgba(184,150,46,.5), transparent); }
+.tl-seg:hover .tl-handle-r { background: linear-gradient(270deg, rgba(184,150,46,.5), transparent); }
 .tl-tooltip {
-  position: absolute; bottom: 54px; background: rgba(0,0,0,.9);
-  border: 0.5px solid var(--cyan); border-radius: var(--r);
-  font-family: var(--fo); font-size: 9px; color: var(--cyan);
-  padding: 3px 7px; pointer-events: none; z-index: 30;
-  transform: translateX(-50%); white-space: nowrap;
-  box-shadow: 0 0 8px rgba(0,245,255,.3);
+  position: absolute; bottom: 50px; background: var(--surface);
+  border: 1px solid var(--gold); border-radius: var(--r);
+  font-family: var(--fm); font-size: 9px; color: var(--gold2);
+  padding: 2px 6px; pointer-events: none; z-index: 30;
+  transform: translateX(-50%); white-space: nowrap; display: none;
 }
 
-/* DETAIL */
-.detail { overflow: hidden; }
-.det-empty { padding: 2.5rem; text-align: center; color: var(--tx3); font-family: var(--fo); font-size: 11px; letter-spacing: .06em; line-height: 2.2; }
-.det-head  { padding: .875rem 1.125rem; border-bottom: 0.5px solid var(--bd); }
-.det-title { font-family: var(--fo); font-size: 14px; font-weight: 700; letter-spacing: .05em; background: linear-gradient(90deg, var(--cyan), var(--aurora1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.det-meta  { font-size: 11px; color: var(--tx2); margin-top: 3px; font-family: var(--fo); letter-spacing: .03em; }
-.det-badges { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
-.db   { font-family: var(--fo); font-size: 9px; padding: 2px 7px; border-radius: var(--r); border: 0.5px solid; letter-spacing: .05em; }
-.db-t { background: rgba(0,212,255,0.1);  color: var(--aurora4); border-color: rgba(0,212,255,0.3); }
-.db-k { background: rgba(255,215,0,0.1);  color: var(--gold);    border-color: rgba(255,215,0,0.3); }
-.db-f { background: rgba(0,255,179,0.1);  color: var(--aurora1); border-color: rgba(0,255,179,0.3); }
-.det-body { padding: .875rem 1.125rem; display: flex; flex-direction: column; gap: .875rem; }
+/* MAIN CONTENT */
+.main-content { display: grid; grid-template-columns: 1fr 280px; flex: 1; overflow: hidden; }
 
-/* CHORDS */
-.sl { font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.sl::after { content: ''; flex: 1; height: 0.5px; background: linear-gradient(90deg, var(--bd2), transparent); }
-.cgrid { display: grid; gap: 5px; }
-.cbox { border: 0.5px solid rgba(255,255,255,0.08); border-left: 2px solid; border-radius: var(--r); padding: 7px 9px; min-height: 48px; position: relative; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px); }
-.cbox.modal   { border-left-color: var(--magenta); }
-.cbox.tension { border-left-color: var(--violet); }
-.cbox.resolve { border-left-color: var(--aurora1); }
-.cbox.jazz    { border-left-color: var(--aurora4); }
-.cbox.bright  { border-left-color: var(--gold); }
-.cbox.neutral { border-left-color: var(--tx3); }
-.cn  { font-family: var(--fo); font-size: 15px; font-weight: 700; color: var(--tx); }
-.cs  { font-size: 9px; color: var(--tx2); margin-top: 2px; font-family: var(--fo); letter-spacing: .03em; }
-.cb2 { position: absolute; top: 5px; right: 7px; font-size: 9px; color: var(--tx3); font-family: var(--fo); }
+/* DETAIL PANEL */
+.detail-panel { padding: 1rem; overflow-y: auto; border-right: 1px solid var(--border); }
+.det-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; gap: 10px; color: var(--tx3); }
+.det-empty-icon { font-family: var(--fc); font-size: 32px; color: var(--gold); opacity: .2; }
+.det-head { margin-bottom: 1rem; padding-bottom: .875rem; border-bottom: 1px solid var(--border); }
+.det-title { font-family: var(--fc); font-size: 16px; color: var(--gold2); letter-spacing: .05em; }
+.det-meta  { font-size: 11px; color: var(--tx2); margin-top: 3px; font-family: var(--fm); }
+.det-badges { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.badge { font-size: 9px; padding: 2px 6px; border-radius: 2px; border: 1px solid; letter-spacing: .06em; font-family: var(--fm); }
+.badge-time  { background: rgba(42,107,124,0.15); color: #5aa0b0; border-color: rgba(42,107,124,0.4); }
+.badge-key   { background: rgba(184,150,46,0.12); color: var(--gold2); border-color: rgba(184,150,46,0.3); }
+.badge-feel  { background: rgba(90,42,124,0.15); color: #9a70c0; border-color: rgba(90,42,124,0.4); }
+
+/* SECTION LABEL */
+.sec-label {
+  font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase;
+  margin: .875rem 0 .5rem; display: flex; align-items: center; gap: 8px;
+}
+.sec-label::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+
+/* CHORD GRID */
+.chord-grid { display: grid; gap: 4px; margin-bottom: .875rem; }
+.chord-box {
+  border: 1px solid var(--border); border-left: 2px solid var(--tx3);
+  border-radius: var(--r); padding: 6px 8px; min-height: 44px;
+  position: relative; background: var(--surface);
+}
+.chord-box.modal   { border-left-color: #8b2020; }
+.chord-box.tension { border-left-color: #5a2a7c; }
+.chord-box.resolve { border-left-color: #2a6b3a; }
+.chord-box.jazz    { border-left-color: #2a6b7c; }
+.chord-box.bright  { border-left-color: var(--gold); }
+.chord-box.neutral { border-left-color: var(--tx3); }
+.chord-name { font-family: var(--fc); font-size: 14px; color: var(--tx); }
+.chord-func { font-size: 9px; color: var(--tx2); margin-top: 2px; font-family: var(--fm); }
+.chord-beats { position: absolute; top: 4px; right: 6px; font-size: 9px; color: var(--tx3); font-family: var(--fm); }
 
 /* RHYTHM */
-.rh-lbl { font-size: 10px; color: var(--tx2); margin-bottom: 5px; font-family: var(--fo); letter-spacing: .03em; }
-.rrow   { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
-.pp     { width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
-.pps   { background: linear-gradient(135deg, var(--cyan), var(--aurora1)); color: #000; box-shadow: 0 0 8px rgba(0,245,255,0.5); font-weight: 700; }
-.ppw   { background: rgba(255,255,255,0.04); color: var(--tx3); border: 0.5px solid rgba(255,255,255,0.08); }
-.rh-note { font-size: 9px; color: var(--tx3); margin-left: 6px; font-family: var(--fo); }
-.cmt { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.7; padding-left: 12px; border-left: 2px solid var(--magenta); }
+.rh-label { font-size: 10px; color: var(--tx2); margin-bottom: 4px; font-family: var(--fm); }
+.rh-row { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; margin-bottom: .5rem; }
+.rh-pulse { width: 18px; height: 18px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+.rh-s { background: var(--gold); color: #000; }
+.rh-w { background: var(--surface2); color: var(--tx3); border: 1px solid var(--border); }
+.rh-note { font-size: 9px; color: var(--tx3); margin-left: 5px; }
+
+/* COMMENT */
+.comment { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.7; padding-left: 10px; border-left: 2px solid var(--gold); margin-bottom: .875rem; }
 
 /* MINI CARDS */
-.mcards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.mc     { background: rgba(0,0,0,0.3); border: 0.5px solid var(--bd); border-radius: var(--r); padding: 8px 10px; }
-.mc .l  { font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
-.mc .v  { font-size: 10px; color: var(--tx2); line-height: 1.5; }
+.mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.mini-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 9px; }
+.mini-card .l { font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+.mini-card .v { font-size: 10px; color: var(--tx2); line-height: 1.5; }
 
 /* LEGEND */
-.leg { display: flex; gap: 8px; flex-wrap: wrap; }
-.li  { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--tx3); font-family: var(--fo); }
-.ld  { width: 8px; height: 8px; border-radius: 2px; }
+.legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: .75rem; }
+.leg-item { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--tx3); }
+.leg-dot { width: 7px; height: 7px; border-radius: 1px; }
 
-/* RIGHT PANEL */
-.right { display: flex; flex-direction: column; overflow: hidden; min-height: 200px; }
-.rh-hdr { padding: .75rem 1rem; border-bottom: 0.5px solid var(--bd); font-family: var(--fo); font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .1em; display: flex; justify-content: space-between; align-items: center; }
-.rh-hdr span { font-size: 11px; color: var(--cyan); text-transform: none; letter-spacing: 0; text-shadow: 0 0 8px rgba(0,245,255,.4); }
-.slist { overflow-y: auto; flex: 1; max-height: 420px; }
-.slist::-webkit-scrollbar { width: 3px; }
-.slist::-webkit-scrollbar-thumb { background: var(--violet); border-radius: 2px; }
-.slist-empty { padding: 2rem; text-align: center; color: var(--tx3); font-family: var(--fo); font-size: 10px; letter-spacing: .06em; line-height: 2; }
-.si { display: flex; align-items: center; gap: 7px; padding: .5rem 1rem; cursor: pointer; border-bottom: 0.5px solid var(--bd); transition: background .15s; }
-.si:last-child { border-bottom: none; }
-.si:hover { background: rgba(0,245,255,0.04); }
-.si.active { background: rgba(0,245,255,0.07); border-left: 2px solid var(--cyan); padding-left: calc(1rem - 2px); }
-.si-num  { font-family: var(--fo); font-size: 9px; color: var(--tx3); min-width: 22px; }
-.si-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.si-name { font-size: 11px; color: var(--tx); flex: 1; }
-.si-time { font-family: var(--fo); font-size: 9px; color: var(--tx3); }
+/* SECTION LIST */
+.section-list { overflow-y: auto; border-top: 1px solid var(--border); }
+.sl-header { padding: .5rem .875rem; border-bottom: 1px solid var(--border); font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between; }
+.sl-header span { color: var(--gold2); text-transform: none; letter-spacing: 0; font-size: 11px; }
+.sl-item { display: flex; align-items: center; gap: 6px; padding: .4rem .875rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+.sl-item:hover { background: var(--surface2); }
+.sl-item.active { background: rgba(184,150,46,0.08); border-left: 2px solid var(--gold); padding-left: calc(.875rem - 2px); }
+.sl-num  { font-family: var(--fm); font-size: 9px; color: var(--tx3); min-width: 20px; }
+.sl-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sl-name { font-size: 11px; color: var(--tx); flex: 1; }
+.sl-time { font-family: var(--fm); font-size: 9px; color: var(--tx3); }
 
-/* SYNC */
-.sync-bar { display: flex; align-items: center; gap: 8px; font-family: var(--fo); font-size: 10px; color: var(--tx3); }
-.sync-bar input[type=range] { flex: 1; accent-color: var(--magenta); }
-.sync-val { font-size: 10px; color: var(--magenta); min-width: 38px; text-shadow: 0 0 6px var(--magenta); }
-.sync-bar button { padding: 3px 8px; background: transparent; border: 0.5px solid var(--bd); border-radius: var(--r); color: var(--tx3); cursor: pointer; font-family: var(--fo); font-size: 9px; transition: border-color .15s; }
-.sync-bar button:hover { border-color: var(--magenta); color: var(--magenta); }
-.footer { font-family: var(--fo); font-size: 9px; color: var(--tx3); letter-spacing: .06em; padding-top: .5rem; text-align: center; }
+/* ── BIBLIOTECA VIEW ── */
+.biblioteca { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.bib-header { padding: .875rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.bib-title { font-family: var(--fc); font-size: 16px; color: var(--gold2); letter-spacing: .1em; flex: 1; }
+.search-input {
+  background: var(--deep); border: 1px solid var(--border2); border-radius: var(--r);
+  color: var(--tx); font-family: var(--fr); font-size: 12px; padding: 6px 10px;
+  outline: none; width: 220px; transition: border-color .2s;
+}
+.search-input:focus { border-color: var(--gold); }
+.search-input::placeholder { color: var(--tx3); }
+.bib-content { flex: 1; display: grid; grid-template-columns: 200px 1fr; overflow: hidden; }
+.artists-panel { border-right: 1px solid var(--border); overflow-y: auto; }
+.artist-item { padding: .5rem .875rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+.artist-item:hover { background: var(--surface2); }
+.artist-item.active { background: rgba(184,150,46,0.08); border-left: 2px solid var(--gold); padding-left: calc(.875rem - 2px); }
+.artist-name { font-size: 12px; color: var(--tx); }
+.artist-count { font-size: 10px; color: var(--tx3); font-family: var(--fm); }
+.songs-panel { overflow-y: auto; padding: .875rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .75rem; align-content: start; }
+.song-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); padding: .875rem; cursor: pointer; transition: all .2s; }
+.song-card:hover { border-color: var(--gold); box-shadow: 0 0 15px rgba(184,150,46,0.1); }
+.song-title { font-family: var(--fc); font-size: 13px; color: var(--gold2); letter-spacing: .04em; margin-bottom: 2px; }
+.song-artist { font-size: 11px; color: var(--tx2); margin-bottom: 6px; }
+.song-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.song-tag { font-family: var(--fm); font-size: 9px; color: var(--tx3); border: 1px solid var(--border); border-radius: 2px; padding: 1px 5px; }
+.song-analyses { font-size: 10px; color: var(--gold); margin-top: 6px; }
 
-/* CALIBRACIÓN */
-.cal-bar { display: none; align-items: center; gap: 8px; padding: .625rem 1rem; flex-wrap: wrap; }
-.cal-bar.active { display: flex; }
-.cal-title { font-family: var(--fo); font-size: 10px; color: var(--gold); letter-spacing: .08em; text-shadow: 0 0 8px var(--gold); }
-.cal-info { font-family: var(--fo); font-size: 11px; color: var(--cyan); flex: 1; text-shadow: 0 0 6px var(--cyan); }
-.cal-next { font-size: 10px; color: var(--tx2); font-family: var(--fo); }
-.btn-cal { padding: 6px 14px; border: none; border-radius: var(--r); cursor: pointer; font-family: var(--fo); font-size: 10px; font-weight: 700; letter-spacing: .06em; transition: all .15s; }
-.btn-cal-start { background: linear-gradient(135deg, var(--aurora1), var(--aurora4)); color: #000; box-shadow: 0 0 12px rgba(0,255,179,0.4); }
-.btn-cal-mark  { background: linear-gradient(135deg, var(--gold), var(--magenta)); color: #000; box-shadow: 0 0 12px rgba(255,215,0,0.5); font-size: 12px; padding: 8px 18px; }
-.btn-cal-end   { background: rgba(255,255,255,0.08); color: var(--tx2); border: 0.5px solid var(--bd2); }
-.btn-cal:hover { filter: brightness(1.2); transform: scale(1.02); }
-.cal-progress { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; }
-.cal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tx3); transition: background .3s; }
-.cal-dot.done { background: var(--aurora1); box-shadow: 0 0 6px var(--aurora1); }
-.cal-dot.current { background: var(--gold); box-shadow: 0 0 8px var(--gold); animation: pulse-dot 1s ease-in-out infinite; }
-@keyframes pulse-dot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+/* ANALISIS MODAL */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; }
+.modal-bg.show { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--gold); border-radius: var(--rl); padding: 1.5rem; max-width: 480px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.modal-title { font-family: var(--fc); font-size: 16px; color: var(--gold2); letter-spacing: .08em; margin-bottom: .875rem; }
+.modal-close { float: right; background: none; border: none; color: var(--tx3); cursor: pointer; font-size: 16px; }
+.modal-close:hover { color: var(--tx); }
+.analysis-item { border: 1px solid var(--border); border-radius: var(--r); padding: .75rem; margin-bottom: .5rem; cursor: pointer; transition: all .2s; }
+.analysis-item:hover { border-color: var(--gold); }
+.ai-label { font-size: 12px; color: var(--tx); margin-bottom: 4px; }
+.ai-meta  { font-size: 10px; color: var(--tx3); font-family: var(--fm); }
+.ai-user  { font-size: 10px; color: var(--gold2); }
+.ai-votes { font-size: 10px; color: var(--tx2); }
+.btn-load-analysis { width: 100%; padding: 8px; background: var(--gold); color: #000; border: none; border-radius: var(--r); cursor: pointer; font-family: var(--fc); font-size: 11px; font-weight: 600; letter-spacing: .08em; margin-top: .75rem; }
+
+/* SAVE MODAL */
+.save-form .field { margin-bottom: .75rem; }
+.version-input { width: 100%; background: var(--deep); border: 1px solid var(--border2); border-radius: var(--r); color: var(--tx); font-family: var(--fr); font-size: 12px; padding: 7px 10px; outline: none; }
+.version-input:focus { border-color: var(--gold); }
 
 /* OVERLAY */
-.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+.ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 300; align-items: center; justify-content: center; }
 .ov.show { display: flex; }
-.ov-box { background: rgba(8,5,20,0.95); border: 0.5px solid var(--bd2); border-radius: var(--rl); padding: 2.5rem 3rem; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 0 60px rgba(0,245,255,0.2), 0 0 120px rgba(255,0,229,0.1); }
-.wormhole { width: 60px; height: 60px; margin: 0 auto 1rem; position: relative; }
-.wormhole::before, .wormhole::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; }
-.wormhole::before { border-top-color: var(--cyan); border-right-color: var(--magenta); animation: worm 1.2s linear infinite; }
-.wormhole::after  { border-bottom-color: var(--violet); border-left-color: var(--aurora1); animation: worm 0.8s linear infinite reverse; inset: 8px; }
-@keyframes worm { to { transform: rotate(360deg); } }
-.ov-title { font-family: var(--fo); font-size: 15px; font-weight: 700; letter-spacing: .1em; background: linear-gradient(90deg, var(--cyan), var(--magenta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
-.ov-sub   { font-size: 11px; color: var(--tx2); line-height: 1.6; }
-.ov-bar   { margin-top: 18px; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
-.ov-fill  { height: 100%; border-radius: 2px; width: 0%; transition: width .4s; background: linear-gradient(90deg, var(--violet), var(--magenta), var(--cyan)); }
-.ov-step  { font-family: var(--fo); font-size: 10px; color: var(--cyan); margin-top: 10px; letter-spacing: .06em; text-shadow: 0 0 8px var(--cyan); }
+.ov-box { background: var(--surface); border: 1px solid var(--gold); border-radius: var(--rl); padding: 2.5rem; text-align: center; max-width: 360px; width: 90%; box-shadow: 0 0 40px rgba(184,150,46,0.15); }
+.ov-title { font-family: var(--fc); font-size: 16px; color: var(--gold2); letter-spacing: .1em; margin-bottom: 6px; }
+.ov-sub { font-size: 11px; color: var(--tx2); line-height: 1.6; margin-bottom: 1rem; }
+.ov-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+.ov-fill { height: 100%; background: var(--gold); width: 0%; transition: width .4s; }
+.ov-step { font-family: var(--fm); font-size: 10px; color: var(--gold); margin-top: 8px; letter-spacing: .06em; }
+.ov-spin { font-family: var(--fc); font-size: 36px; color: var(--gold); margin-bottom: 1rem; animation: spin 3s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<div class="stars"></div>
-<canvas id="cosmos"></canvas>
-
-<!-- OVERLAY -->
+<!-- [003] HTML VISTAS -->
 <div class="ov" id="ov">
   <div class="ov-box">
-    <div class="wormhole"></div>
-    <div class="ov-title">SCANNING THE COSMOS</div>
-    <div class="ov-sub">Gemini está analizando la estructura armónica y rítmica...</div>
+    <div class="ov-spin">⬡</div>
+    <div class="ov-title" id="ovTitle">ANALIZANDO</div>
+    <div class="ov-sub" id="ovSub">Gemini está analizando la estructura armónica...</div>
     <div class="ov-bar"><div class="ov-fill" id="ovFill"></div></div>
-    <div class="ov-step" id="ovStep">INICIANDO SECUENCIA...</div>
+    <div class="ov-step" id="ovStep">INICIANDO...</div>
   </div>
 </div>
 
-<!-- APP -->
+<!-- MODAL ANÁLISIS DE CANCIÓN -->
+<div class="modal-bg" id="modalAnalisis">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalAnalisis')">✕</button>
+    <div class="modal-title" id="modalSongTitle">Análisis disponibles</div>
+    <div id="modalAnalisisList"></div>
+  </div>
+</div>
+
+<!-- MODAL GUARDAR -->
+<div class="modal-bg" id="modalSave">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalSave')">✕</button>
+    <div class="modal-title">Guardar análisis</div>
+    <div class="save-form">
+      <div class="field">
+        <label>ETIQUETA DE VERSIÓN</label>
+        <input type="text" class="version-input" id="saveLabel" placeholder="Análisis principal, Jazz reharmonization, etc.">
+      </div>
+      <div class="field">
+        <label>NOTAS ADICIONALES</label>
+        <input type="text" class="version-input" id="saveNotas" placeholder="Observaciones sobre este análisis...">
+      </div>
+      <button class="btn-primary" onclick="confirmSave()">GUARDAR EN BIBLIOTECA</button>
+    </div>
+  </div>
+</div>
+
 <div class="app">
-
-  <div class="glass hd">
+  <!-- HEADER -->
+  <header class="header">
     <div>
-      <div class="logo">XX ANALYSIS</div>
-      <div class="logo-sub">COSMIC MUSIC ANALYZER · ARMÓNICO · RÍTMICO · SINCRONIZADO</div>
+      <div class="logo">XX <span>ANALYSIS</span></div>
+      <div class="logo-sub">MUSIC THEORY DATABASE · HARMONIC ANALYSIS · REAL-TIME SYNC</div>
     </div>
-    <span class="cosmic-badge">GEMINI AI · YOUTUBE SYNC</span>
-  </div>
-
-  <div class="glass input-panel">
-    <div class="ip-row">
-      <input type="text" class="url-input" id="ytUrl"
-        placeholder="PASTE YOUTUBE URL HERE..."
-        autocomplete="off">
-      <button class="btn-cosmic" id="btnAnalyze" onclick="startAnalysis()">⟁ ANALIZAR</button>
-    </div>
-    <div class="hint">Pegá cualquier URL de YouTube · Enter para analizar · El análisis tarda 15-20 segundos</div>
-    <div class="status" id="status"></div>
-  </div>
-
-  <div class="main" id="mainGrid" style="display:none">
-    <!-- LEFT: análisis -->
-    <div class="left">
-      <div class="glass now-bar">
-        <button class="play-global" id="playGlobal" onclick="togglePlay()" title="Play / Pause" disabled>▶</button>
-        <div class="now-dot" id="nowDot" style="background:var(--tx3)"></div>
-        <span class="now-lbl">NOW:</span>
-        <span class="now-name" id="nowName">— ESPERANDO ANÁLISIS —</span>
-        <span class="now-m" id="nowMeter">—</span>
-        <span class="now-t" id="nowTime">0:00</span>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showView('analyzer')" id="navAnalyzer">ANALYZER</button>
+      <button class="nav-btn" onclick="showView('biblioteca')" id="navBiblioteca">BIBLIOTECA</button>
+      <div class="user-chip" id="userChip" onclick="showView('auth')" style="display:none">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userName">—</span>
       </div>
+      <button class="nav-btn" id="navAuth" onclick="showView('auth')">INGRESAR</button>
+      <button class="nav-btn" id="navLogout" onclick="logout()" style="display:none">SALIR</button>
+    </nav>
+  </header>
 
-      <!-- CALIBRACIÓN -->
-      <div class="glass cal-bar" id="calBar">
-        <span class="cal-title">◈ CALIBRAR</span>
-        <span class="cal-info" id="calInfo">Presioná START y clickeá MARCAR al inicio de cada sección</span>
-        <span class="cal-next" id="calNext"></span>
-        <button class="btn-cal btn-cal-start" id="btnCalStart" onclick="startCalibration()">▶ START</button>
-        <button class="btn-cal btn-cal-mark" id="btnCalMark" onclick="markSection()" style="display:none">⏱ MARCAR SECCIÓN</button>
-        <button class="btn-cal btn-cal-end" id="btnCalEnd" onclick="endCalibration()" style="display:none">✓ FIN</button>
-      </div>
-      <div class="cal-progress" id="calProgress"></div>
-
-      <div class="timeline-wrap">
-        <div class="tl-lbl">
-          <span>▸ MAPA DE SECCIONES</span>
-          <span class="tl-edit-hint" id="tlHint">↔ arrastrá los bordes para editar · click para saltar</span>
+  <!-- AUTH VIEW -->
+  <div class="view active" id="viewAuth">
+    <div class="auth-wrap">
+      <div class="auth-box">
+        <div class="auth-title">XX ANALYSIS</div>
+        <div class="auth-sub">MUSIC THEORY DATABASE</div>
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">INGRESAR</button>
+          <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">REGISTRARSE</button>
         </div>
-        <div class="timeline" id="timeline">
-          <div class="tl-playhead" id="tlPlayhead" style="left:0%"></div>
-          <div class="tl-tooltip" id="tlTooltip" style="display:none"></div>
+        <!-- LOGIN -->
+        <div id="formLogin">
+          <div class="field"><label>EMAIL</label><input type="email" id="loginEmail" placeholder="tu@email.com"></div>
+          <div class="field"><label>CONTRASEÑA</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+          <button class="btn-primary" onclick="login()">INGRESAR</button>
+          <div class="auth-error" id="loginError"></div>
+        </div>
+        <!-- REGISTER -->
+        <div id="formRegister" style="display:none">
+          <div class="field"><label>USERNAME</label><input type="text" id="regUser" placeholder="nombredeusuario"></div>
+          <div class="field"><label>EMAIL</label><input type="email" id="regEmail" placeholder="tu@email.com"></div>
+          <div class="field"><label>CONTRASEÑA</label><input type="password" id="regPass" placeholder="••••••••"></div>
+          <button class="btn-primary" onclick="register()">CREAR CUENTA</button>
+          <div class="auth-error" id="regError"></div>
+        </div>
+        <div style="text-align:center;margin-top:1rem">
+          <button class="btn-secondary" onclick="continueAsGuest()">Continuar sin cuenta</button>
         </div>
       </div>
-
-      <div class="glass detail" id="detail">
-        <div class="det-empty">◈<br><br>ANALIZÁ UNA CANCIÓN<br>PARA VER EL ANÁLISIS<br>SECCIÓN POR SECCIÓN</div>
-      </div>
     </div>
+  </div>
 
-    <!-- RIGHT: video miniatura + lista secciones -->
-    <div style="display:flex;flex-direction:column;gap:.875rem">
-      <!-- Video miniatura -->
-      <div class="video-wrap">
-        <div id="ytPlayer">
-          <div class="vph">
-            <div class="big" style="font-size:28px">◈</div>
-            <span>VIDEO</span>
+  <!-- ANALYZER VIEW -->
+  <div class="view" id="viewAnalyzer">
+    <div class="analyzer">
+      <!-- Input -->
+      <div class="input-bar">
+        <input type="text" class="url-input" id="ytUrl" placeholder="Pegá una URL de YouTube...">
+        <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">ANALIZAR</button>
+        <button class="btn-save" id="btnSave" onclick="openSaveModal()">GUARDAR</button>
+      </div>
+      <div class="status-bar" id="statusBar"></div>
+
+      <!-- Video -->
+      <div class="video-section">
+        <div class="video-wrap">
+          <div id="ytPlayer">
+            <div class="video-placeholder">
+              <div class="vph-icon">▷</div>
+              <div class="vph-text">PEGÁ UNA URL DE YOUTUBE PARA COMENZAR</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Sync offset -->
-      <div class="glass sync-bar" style="padding:.5rem .875rem">
-        <span>SYNC:</span>
-        <input type="range" id="offsetSlider" min="-15" max="15" step="0.5" value="0"
-          oninput="updateOffset(this.value)">
-        <span class="sync-val" id="offsetVal">0.0s</span>
-        <button onclick="resetOffset()">↺</button>
+      <!-- Transport -->
+      <div class="transport">
+        <button class="btn-play" id="btnPlay" onclick="togglePlay()" disabled>▶</button>
+        <div>
+          <div class="now-section" id="nowSection">— ESPERANDO ANÁLISIS —</div>
+          <div class="now-meta" id="nowMeta">—</div>
+        </div>
+        <div class="now-time" id="nowTime">0:00</div>
+        <span class="sync-label">SYNC</span>
+        <input type="range" class="sync-slider" id="syncSlider" min="-15" max="15" step="0.5" value="0" oninput="updateSync(this.value)">
+        <span class="sync-val" id="syncVal">0.0s</span>
       </div>
 
-      <!-- Secciones -->
-      <div class="glass-mag right" style="flex:1">
-        <div class="rh-hdr">SECCIONES <span id="secCount">—</span>
-        <button class="btn-cal btn-cal-start" id="btnOpenCal" onclick="openCalibration()" style="display:none;padding:3px 8px;font-size:9px">◈ CALIBRAR</button>
+      <!-- Timeline -->
+      <div class="timeline-section">
+        <div class="tl-header">
+          <span class="tl-title">MAPA DE SECCIONES — arrastrá los bordes para calibrar</span>
+          <span class="tl-hint" id="tlHint"></span>
+        </div>
+        <div class="timeline" id="timeline">
+          <div class="tl-playhead" id="tlPlayhead" style="left:0%"></div>
+          <div class="tl-tooltip" id="tlTooltip"></div>
+        </div>
       </div>
-        <div class="slist" id="slist">
-          <div class="slist-empty">PEGÁ UNA URL<br>Y ANALIZÁ</div>
+
+      <!-- Main -->
+      <div class="main-content">
+        <!-- Detail -->
+        <div class="detail-panel" id="detailPanel">
+          <div class="det-empty">
+            <div class="det-empty-icon">♩</div>
+            <div>Analizá una canción para ver el análisis</div>
+          </div>
+        </div>
+        <!-- Section list -->
+        <div class="section-list">
+          <div class="sl-header">SECCIONES <span id="secCount">—</span></div>
+          <div id="slist"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="footer">XX ANALYSIS · POWERED BY GEMINI 2.5 FLASH · GITHUB.COM/VIC919WASP/XX-ANALISIS</div>
+  <!-- BIBLIOTECA VIEW -->
+  <div class="view" id="viewBiblioteca">
+    <div class="biblioteca">
+      <div class="bib-header">
+        <div class="bib-title">BIBLIOTECA</div>
+        <input type="text" class="search-input" id="bibSearch" placeholder="Buscar canción o artista..." oninput="searchBib(this.value)">
+        <button class="btn-secondary" onclick="loadBib()">↺ ACTUALIZAR</button>
+      </div>
+      <div class="bib-content">
+        <div class="artists-panel" id="artistsPanel"></div>
+        <div class="songs-panel" id="songsPanel"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- [004] DATOS Y ESTADO -->
 <script>
+const BACKEND = 'https://xx-analysis-backend.onrender.com';
 window.GEMINI_KEY = '__GEMINI_API_KEY__';
 
 let SECTIONS = [], TOTAL = 0, currentSection = 0;
 let ytPlayer = null, syncInterval = null, offsetSecs = 0;
+let currentAnalysis = null, currentVideoId = '';
+let authToken = localStorage.getItem('xx_token');
+let authUser  = JSON.parse(localStorage.getItem('xx_user') || 'null');
 
-const SCOL = {
-  intro:['#1a0a2e','#8b00ff'], riff:['#2a0a0a','#ff003c'],
-  verse:['#0a0a2a','#0066ff'], estrofa:['#0a0a2a','#0066ff'],
-  'pre-coro':['#1a0a2a','#cc00ff'], precoro:['#1a0a2a','#cc00ff'],
-  chorus:['#0a1a0a','#00ff88'], coro:['#0a1a0a','#00ff88'],
-  bridge:['#1a1a0a','#ffcc00'], puente:['#1a1a0a','#ffcc00'],
-  instrumental:['#0a1a1a','#00ccff'], solo:['#0a1a0a','#00ff44'],
-  break:['#2a0a0a','#ff0066'], climax:['#2a0a15','#ff6600'],
-  outro:['#0f0f15','#444466'],
-};
-const gc = t => (SCOL[t?.toLowerCase()] || ['#111','#555'])[0];
-const gd = t => (SCOL[t?.toLowerCase()] || ['#111','#555'])[1];
+// Colores por tipo
+const TYPE_BG  = { intro:'#0d0a06', riff:'#1a0808', verse:'#06080d', chorus:'#06100a', bridge:'#100a06', solo:'#060d08', break:'#1a0808', outro:'#0a0a0a', instrumental:'#06080d', precoro:'#0d0608' };
+const TYPE_DOT = { intro:'#6b5a20', riff:'#8b2020', verse:'#2a5a7c', chorus:'#2a7a3a', bridge:'#7c6a20', solo:'#3a7a4a', break:'#8b2020', outro:'#4a4845', instrumental:'#2a6b7c', precoro:'#5a2a7c' };
+const gbg  = t => TYPE_BG[t?.toLowerCase()]  || '#0d0d0d';
+const gdot = t => TYPE_DOT[t?.toLowerCase()] || '#6b5a20';
 
-// [005] YOUTUBE API
+// [005] AUTH
+function updateAuthUI() {
+  const loggedIn = !!authToken && !!authUser;
+  document.getElementById('navAuth').style.display    = loggedIn ? 'none' : '';
+  document.getElementById('navLogout').style.display  = loggedIn ? '' : 'none';
+  document.getElementById('userChip').style.display   = loggedIn ? '' : 'none';
+  if (loggedIn && authUser) {
+    document.getElementById('userName').textContent = authUser.username;
+    const av = document.getElementById('userAvatar');
+    av.textContent = authUser.username[0].toUpperCase();
+    av.style.background = authUser.avatar_color || '#b8962e';
+  }
+}
+
+function switchTab(tab) {
+  document.getElementById('formLogin').style.display    = tab === 'login'    ? '' : 'none';
+  document.getElementById('formRegister').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active',    tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+}
+
+async function login() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  document.getElementById('loginError').textContent = '';
+  try {
+    const r = await apiFetch('/auth/login', 'POST', { email, password: pass }, false);
+    authToken = r.token; authUser = r.user;
+    localStorage.setItem('xx_token', authToken);
+    localStorage.setItem('xx_user', JSON.stringify(authUser));
+    updateAuthUI();
+    showView('analyzer');
+  } catch(e) { document.getElementById('loginError').textContent = e.message; }
+}
+
+async function register() {
+  const username = document.getElementById('regUser').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const pass     = document.getElementById('regPass').value;
+  document.getElementById('regError').textContent = '';
+  try {
+    const r = await apiFetch('/auth/register', 'POST', { username, email, password: pass }, false);
+    authToken = r.token; authUser = r.user;
+    localStorage.setItem('xx_token', authToken);
+    localStorage.setItem('xx_user', JSON.stringify(authUser));
+    updateAuthUI();
+    showView('analyzer');
+  } catch(e) { document.getElementById('regError').textContent = e.message; }
+}
+
+function logout() {
+  authToken = null; authUser = null;
+  localStorage.removeItem('xx_token');
+  localStorage.removeItem('xx_user');
+  updateAuthUI();
+  showView('auth');
+}
+
+function continueAsGuest() { showView('analyzer'); }
+
+async function apiFetch(path, method, body, auth = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth && authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  const r = await fetch(BACKEND + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || 'Error ' + r.status);
+  return data;
+}
+
+// [006] YOUTUBE API
 function extractId(url) {
   const pp = [/[?&]v=([^&#]+)/, /youtu\.be\/([^?&#]+)/, /embed\/([^?&#]+)/, /shorts\/([^?&#]+)/];
   for (const p of pp) { const m = url.match(p); if (m) return m[1]; }
@@ -415,37 +677,28 @@ function onYouTubeIframeAPIReady() {
 }
 
 function createPlayer(vid) {
-  if (ytPlayer?.destroy) ytPlayer.destroy();
-  // limpiar el contenedor y crear div fresco para el player
   const wrap = document.getElementById('ytPlayer');
   wrap.innerHTML = '';
+  if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy();
   ytPlayer = new YT.Player('ytPlayer', {
     height: '100%', width: '100%', videoId: vid,
     host: 'https://www.youtube-nocookie.com',
-    playerVars: {
-      autoplay: 0, controls: 1, rel: 0, modestbranding: 1,
-      playsinline: 1, enablejsapi: 1,
-      origin: 'https://vic919wasp.github.io'
-    },
+    playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1, enablejsapi: 1, origin: 'https://vic919wasp.github.io' },
     events: {
-      onReady: e => {
-        e.target.setSize('100%', '100%');
-        const btn = document.getElementById('playGlobal');
-        if (btn) btn.disabled = false;
-      },
+      onReady: () => { document.getElementById('btnPlay').disabled = false; },
       onStateChange: e => {
-        const btn = document.getElementById('playGlobal');
-        if (e.data === YT.PlayerState.PLAYING) {
-          startSync();
-          if (btn) btn.textContent = '⏸';
-        } else {
-          stopSync();
-          if (btn) btn.textContent = '▶';
-        }
-      },
-      onError: () => setStatus('error', '⚠ YouTube bloqueó el video. Desactivá Shields en Brave (ícono del león) para esta página.')
+        const btn = document.getElementById('btnPlay');
+        if (e.data === YT.PlayerState.PLAYING) { startSync(); if (btn) btn.textContent = '⏸'; }
+        else { stopSync(); if (btn) btn.textContent = '▶'; }
+      }
     }
   });
+}
+
+function togglePlay() {
+  if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+  if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+  else ytPlayer.playVideo();
 }
 
 function startSync() {
@@ -454,152 +707,74 @@ function startSync() {
     if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
     const t = Math.max(0, ytPlayer.getCurrentTime() + offsetSecs);
     const sec = getSectionAt(t);
-    if (sec !== currentSection) {
-      currentSection = sec;
-      renderDetail(sec);
-      renderList();
-    }
-    updateNow(t, sec);
-    updateTL(t, sec);
-  }, 100);
+    if (sec !== currentSection) { currentSection = sec; renderDetail(sec); renderSList(); }
+    updateTransport(t, sec);
+    updatePlayhead(t);
+  }, 150);
 }
 function stopSync() { if (syncInterval) { clearInterval(syncInterval); syncInterval = null; } }
-
-function togglePlay() {
-  if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
-  const state = ytPlayer.getPlayerState();
-  if (state === YT.PlayerState.PLAYING) {
-    ytPlayer.pauseVideo();
-    document.getElementById('playGlobal').textContent = '▶';
-  } else {
-    ytPlayer.playVideo();
-    document.getElementById('playGlobal').textContent = '⏸';
-  }
-}
+function getSectionAt(t) { for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start) return i; return 0; }
+function updateSync(v) { offsetSecs = parseFloat(v); document.getElementById('syncVal').textContent = parseFloat(v).toFixed(1) + 's'; }
 
 function seekTo(i) {
   const t = Math.max(0, SECTIONS[i].start - offsetSecs);
-  if (ytPlayer?.seekTo) { ytPlayer.seekTo(t, true); ytPlayer.playVideo(); }
-  currentSection = i; renderDetail(i); renderList();
-}
-function getSectionAt(t) {
-  for (let i = SECTIONS.length - 1; i >= 0; i--) if (t >= SECTIONS[i].start) return i;
-  return 0;
-}
-function updateOffset(v) { offsetSecs = parseFloat(v); document.getElementById('offsetVal').textContent = parseFloat(v).toFixed(1) + 's'; }
-function resetOffset()   { offsetSecs = 0; document.getElementById('offsetSlider').value = 0; document.getElementById('offsetVal').textContent = '0.0s'; }
-
-// [006] GEMINI API
-function repairJson(str) {
-  // Eliminar coma final antes de cerrar
-  str = str.replace(/,\s*([}\]])/g, '$1');
-  // Contar llaves/corchetes abiertos
-  let opens = 0, arrOpen = 0;
-  for (const c of str) {
-    if (c === '{') opens++; else if (c === '}') opens--;
-    if (c === '[') arrOpen++; else if (c === ']') arrOpen--;
-  }
-  // Cortar en el último objeto completo si hay desequilibrio
-  if (opens > 0 || arrOpen > 0) {
-    const lastGood = str.lastIndexOf('},');
-    if (lastGood > 0) str = str.substring(0, lastGood + 1);
-    // Recalcular
-    opens = 0; arrOpen = 0;
-    for (const c of str) {
-      if (c === '{') opens++; else if (c === '}') opens--;
-      if (c === '[') arrOpen++; else if (c === ']') arrOpen--;
-    }
-    for (let i = 0; i < arrOpen; i++) str += ']';
-    for (let i = 0; i < opens; i++) str += '}';
-  }
-  return str;
+  if (ytPlayer && ytPlayer.seekTo) { ytPlayer.seekTo(t, true); ytPlayer.playVideo(); }
+  currentSection = i; renderDetail(i); renderSList();
 }
 
+// [007] GEMINI / ANALIZAR
 async function startAnalysis() {
   const url = document.getElementById('ytUrl').value.trim();
-  if (!url) return setStatus('error', '⚠ Ingresá una URL de YouTube.');
+  if (!url) return setStatus('error', 'Ingresá una URL de YouTube.');
   const vid = extractId(url);
-  if (!vid) return setStatus('error', '⚠ URL inválida. Usá una URL de youtube.com o youtu.be');
+  if (!vid) return setStatus('error', 'URL inválida.');
+  currentVideoId = vid;
 
-  showOv(true); setOvStep('IDENTIFICANDO LA CANCIÓN...', 10);
+  showOv(true, 'ANALIZANDO', 'Gemini identifica la canción y analiza su estructura harmónica...', 0, 'INICIANDO...');
   document.getElementById('btnAnalyze').disabled = true;
 
   const prompt = [
-    'Sos un experto en teoría musical con conocimiento enciclopédico de todos los géneros.',
-    '',
-    'Video de YouTube ID: ' + vid,
+    'Sos un experto en teoría musical. Analizá la canción del video YouTube ID: ' + vid,
     'URL: ' + url,
     '',
-    'PASO 1: Identificá el artista y título exacto de este video.',
-    'PASO 2: Analizá la estructura real de la canción con acordes específicos, timestamps, modo, BPM.',
-    'PASO 3: Generá ÚNICAMENTE este JSON (sin markdown, sin texto extra):',
-    '',
-    '{"title":"...","artist":"...","total_duration":300,"bpm":120,"key":"E minor","sections":[',
-    '{"id":"01","name":"nombre sección","type":"intro","start":0,"end":20,',
-    '"time_signature":"4/4","key":"E minor","feel":"oscuro/pesado","bpm":120,',
+    'PASO 1: Identificá artista y título exacto.',
+    'PASO 2: Analizá estructura real — acordes específicos, timestamps, modo, BPM, compás.',
+    'PASO 3: Respondé SOLO con JSON (sin markdown):',
+    '{"title":"...","artist":"...","album":"...","year":2000,"genre":"...","total_duration":300,"bpm":120,"key":"E minor","sections":[',
+    '{"id":"01","name":"Intro","type":"intro","start":0,"end":20,"time_signature":"4/4","key":"E minor","feel":"...","bpm":120,',
     '"chords":[{"name":"Em7","function":"i7","beats":"2","type":"modal","note":"tónica"}],',
     '"rhythm_pattern":[1,0,1,0,1,0,1,0],"rhythm_label":"4/4 negras",',
-    '"comment":"descripción 2 oraciones","harmony":"análisis armónico",',
-    '"rhythm_analysis":"análisis rítmico","color":"concepto/influencias","voicings":"instrumentación"}',
-    ']}',
-    '',
-    'Reglas: chord type = modal/tension/resolve/jazz/bright/neutral',
-    'section type = intro/riff/verse/chorus/bridge/solo/break/outro/instrumental/precoro',
-    'Incluí TODAS las secciones con repeticiones. Acordes ESPECÍFICOS de la canción.'
+    '"comment":"...","harmony":"...","rhythm_analysis":"...","color":"...","voicings":"..."}]}',
+    'chord type: modal/tension/resolve/jazz/bright/neutral',
+    'section type: intro/riff/verse/chorus/bridge/solo/break/outro/instrumental/precoro',
+    'TODAS las secciones con repeticiones. Acordes ESPECÍFICOS de la canción. Textos max 150 chars.'
   ].join('\n');
 
   try {
     setOvStep('CONSULTANDO GEMINI...', 30);
-
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + window.GEMINI_KEY;
-
     const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 16384,
-          responseMimeType: 'application/json'
-        }
-      })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
     });
-
-    setOvStep('DECODIFICANDO FRECUENCIAS...', 65);
-
-    if (!res.ok) {
-      const e = await res.json();
-      throw new Error(e.error ? e.error.message : 'HTTP ' + res.status);
-    }
-
+    setOvStep('PROCESANDO RESPUESTA...', 65);
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error ? e.error.message : 'HTTP ' + res.status); }
     const data = await res.json();
-    const raw = data.candidates && data.candidates[0] && data.candidates[0].content &&
-                data.candidates[0].content.parts && data.candidates[0].content.parts[0] ?
-                data.candidates[0].content.parts[0].text : '';
-
-    if (!raw) throw new Error('Gemini no devolvió contenido. Intentá de nuevo.');
-
-    setOvStep('MATERIALIZANDO ANÁLISIS...', 85);
-
+    const raw = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : '';
+    if (!raw) throw new Error('Sin respuesta de Gemini.');
     let clean = raw.replace(/```json|```/g, '').trim();
     let analysis;
-    try {
-      analysis = JSON.parse(clean);
-    } catch(e) {
-      clean = repairJson(clean);
-      analysis = JSON.parse(clean);
-    }
-
+    try { analysis = JSON.parse(clean); }
+    catch(e) { clean = repairJson(clean); analysis = JSON.parse(clean); }
     if (!analysis.sections || !analysis.sections.length) throw new Error('Sin secciones. Intentá de nuevo.');
-
-    setOvStep('✦ ANÁLISIS COMPLETO ✦', 100);
+    setOvStep('CONSTRUYENDO ANÁLISIS...', 90);
+    currentAnalysis = analysis;
     loadAnalysis(analysis, vid);
-    setTimeout(function() { showOv(false); }, 600);
-
+    setOvStep('ANÁLISIS COMPLETO', 100);
+    setTimeout(() => showOv(false), 500);
   } catch(err) {
     showOv(false);
-    setStatus('error', '⚠ ' + err.message);
+    setStatus('error', err.message);
   } finally {
     document.getElementById('btnAnalyze').disabled = false;
   }
@@ -607,393 +782,340 @@ async function startAnalysis() {
 
 function loadAnalysis(data, vid) {
   SECTIONS = data.sections;
-  TOTAL = data.total_duration || SECTIONS[SECTIONS.length - 1]?.end || 300;
+  TOTAL = data.total_duration || SECTIONS[SECTIONS.length-1]?.end || 300;
   currentSection = 0;
-  document.getElementById('mainGrid').style.display = 'grid';
-  document.getElementById('btnOpenCal').style.display = 'flex';
-  hideStatus();
-  buildTL(); renderList(); renderDetail(0); updateNow(0, 0); updateTL(0, 0);
+  buildTL(); renderSList(); renderDetail(0); updateTransport(0, 0); updatePlayhead(0);
+  document.getElementById('btnSave').classList.toggle('show', !!authToken);
+  setStatus('success', (data.artist || '') + ' — ' + (data.title || '') + ' · ' + SECTIONS.length + ' secciones');
   if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
   else window._pendingVid = vid;
 }
 
-// [007] RENDER UI
-const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-function setStatus(t, m) {
-  const el = document.getElementById('status');
-  el.className = `status ${t}`;
-  el.innerHTML = t === 'loading' ? `<span class="spinner">⟳</span>${m}` : m;
-}
-function hideStatus() { document.getElementById('status').style.display = 'none'; }
-function showOv(s) { document.getElementById('ov').classList.toggle('show', s); }
-function setOvStep(m, p) {
-  document.getElementById('ovStep').textContent = m;
-  document.getElementById('ovFill').style.width = p + '%';
+// SAVE
+function openSaveModal() {
+  if (!authToken) return setStatus('error', 'Necesitás una cuenta para guardar análisis.');
+  if (!currentAnalysis) return;
+  document.getElementById('saveLabel').value = 'Análisis principal';
+  document.getElementById('saveNotas').value = '';
+  document.getElementById('modalSave').classList.add('show');
 }
 
-function updateNow(t, i) {
-  if (!SECTIONS[i]) return;
-  const s = SECTIONS[i];
-  const dot = document.getElementById('nowDot');
-  dot.style.background = gd(s.type);
-  document.getElementById('nowName').textContent = `${s.id} · ${s.name}`;
-  document.getElementById('nowMeter').textContent = s.time_signature || '4/4';
-  document.getElementById('nowTime').textContent = fmt(t);
+async function confirmSave() {
+  if (!currentAnalysis || !authToken) return;
+  const label = document.getElementById('saveLabel').value.trim() || 'Análisis principal';
+  const notas = document.getElementById('saveNotas').value.trim();
+  try {
+    const payload = {
+      youtube_id: currentVideoId,
+      title: currentAnalysis.title,
+      artist: currentAnalysis.artist,
+      album: currentAnalysis.album,
+      year: currentAnalysis.year,
+      genre: currentAnalysis.genre,
+      duration: currentAnalysis.total_duration,
+      version_label: label,
+      bpm: currentAnalysis.bpm,
+      key_sig: currentAnalysis.key,
+      notas: notas,
+      sections: SECTIONS
+    };
+    await apiFetch('/analisis', 'POST', payload);
+    closeModal('modalSave');
+    setStatus('success', 'Análisis guardado en la biblioteca.');
+  } catch(e) {
+    setStatus('error', 'Error al guardar: ' + e.message);
+    closeModal('modalSave');
+  }
 }
 
+function repairJson(s) {
+  s = s.replace(/,\s*([}\]])/g, '$1');
+  let o = s.split('').reduce((a,c) => c==='{' ? a+1 : c==='}' ? a-1 : a, 0);
+  let r = s.split('').reduce((a,c) => c==='[' ? a+1 : c===']' ? a-1 : a, 0);
+  if (o > 0 || r > 0) { const l = s.lastIndexOf('},'); if (l > 0) { s = s.slice(0, l+1); o = s.split('').reduce((a,c) => c==='{' ? a+1 : c==='}' ? a-1 : a, 0); r = s.split('').reduce((a,c) => c==='[' ? a+1 : c===']' ? a-1 : a, 0); } s += ']'.repeat(Math.max(0,r)) + '}'.repeat(Math.max(0,o)); }
+  return s;
+}
+
+// [008] TIMELINE DRAG
 function buildTL() {
   const tl = document.getElementById('timeline');
-  // conservar playhead y tooltip
   const ph = document.getElementById('tlPlayhead');
   const tt = document.getElementById('tlTooltip');
-  tl.innerHTML = '';
-  tl.appendChild(ph);
-  tl.appendChild(tt);
-
+  tl.innerHTML = ''; tl.appendChild(ph); tl.appendChild(tt);
   SECTIONS.forEach((s, i) => {
     const left = (s.start / TOTAL) * 100;
-    const w    = ((s.end - s.start) / TOTAL) * 100;
-    const seg  = document.createElement('div');
-    seg.className = 'tl-seg';
-    seg.id = 'tls' + i;
-    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gc(s.type);
-    seg.innerHTML =
-      '<div class="tl-handle tl-handle-l" data-seg="' + i + '" data-side="l"></div>' +
-      '<span class="tl-seg-label">' + s.id + '</span>' +
-      '<div class="tl-handle tl-handle-r" data-seg="' + i + '" data-side="r"></div>';
-    seg.addEventListener('click', function(e) {
-      if (!e.target.classList.contains('tl-handle')) seekTo(i);
-    });
+    const w = ((s.end - s.start) / TOTAL) * 100;
+    const seg = document.createElement('div');
+    seg.className = 'tl-seg'; seg.id = 'tls' + i;
+    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gbg(s.type);
+    seg.innerHTML = '<div class="tl-handle tl-handle-l" data-i="' + i + '" data-side="l"></div>' +
+                    '<span style="pointer-events:none;font-size:8px;overflow:hidden;padding:0 4px;white-space:nowrap">' + s.id + '</span>' +
+                    '<div class="tl-handle tl-handle-r" data-i="' + i + '" data-side="r"></div>';
+    seg.addEventListener('click', function(e) { if (!e.target.dataset.side) seekTo(i); });
     tl.appendChild(seg);
   });
-
-  // mostrar hint de edición
-  document.getElementById('tlHint').classList.add('show');
+  document.getElementById('tlHint').textContent = '↔ arrastrá los bordes · click para saltar';
   initTLDrag();
 }
 
-function updateTL(t, cur) {
-  // mover playhead
+function updatePlayhead(t) {
   const pct = Math.min(100, (t / TOTAL) * 100);
   const ph = document.getElementById('tlPlayhead');
   if (ph) ph.style.left = pct + '%';
-
   SECTIONS.forEach((s, i) => {
     const seg = document.getElementById('tls' + i);
-    if (!seg) return;
-    if (i === cur) seg.classList.add('active');
-    else seg.classList.remove('active');
+    if (seg) seg.classList.toggle('active', i === currentSection);
   });
 }
 
 function initTLDrag() {
   const tl = document.getElementById('timeline');
-  let dragging = null; // {segIdx, side, startX, origStart, origEnd}
-
-  function pxToSec(px) {
-    return (px / tl.getBoundingClientRect().width) * TOTAL;
-  }
+  let drag = null;
 
   tl.addEventListener('mousedown', function(e) {
-    const handle = e.target.closest('.tl-handle');
-    if (!handle) return;
+    const h = e.target.closest('[data-side]');
+    if (!h) return;
     e.preventDefault();
-    const i    = parseInt(handle.dataset.seg);
-    const side = handle.dataset.side;
-    dragging = { i, side, startX: e.clientX, origStart: SECTIONS[i].start, origEnd: SECTIONS[i].end };
+    const i = parseInt(h.dataset.i);
+    drag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end };
     document.getElementById('tls' + i).classList.add('dragging');
   });
 
   document.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    const dx      = e.clientX - dragging.startX;
-    const tlRect  = tl.getBoundingClientRect();
-    const deltaSec = (dx / tlRect.width) * TOTAL;
-    const i = dragging.i;
+    if (!drag) return;
+    const rect = tl.getBoundingClientRect();
+    const dt = ((e.clientX - drag.x0) / rect.width) * TOTAL;
     const tt = document.getElementById('tlTooltip');
-
-    if (dragging.side === 'l') {
-      const newStart = Math.max(0, Math.min(dragging.origStart + deltaSec, SECTIONS[i].end - 1));
-      SECTIONS[i].start = newStart;
-      if (i > 0) SECTIONS[i-1].end = newStart;
-      if (tt) { tt.style.display = 'block'; tt.style.left = ((newStart/TOTAL)*100) + '%'; tt.textContent = fmt(newStart); }
+    const i = drag.i;
+    if (drag.side === 'l') {
+      SECTIONS[i].start = Math.max(0, Math.min(drag.s0 + dt, SECTIONS[i].end - 1));
+      if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
+      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].start/TOTAL)*100) + '%'; tt.textContent = fmt(SECTIONS[i].start); }
     } else {
-      const newEnd = Math.min(TOTAL, Math.max(dragging.origEnd + deltaSec, SECTIONS[i].start + 1));
-      SECTIONS[i].end = newEnd;
-      if (i < SECTIONS.length - 1) SECTIONS[i+1].start = newEnd;
-      if (tt) { tt.style.display = 'block'; tt.style.left = ((newEnd/TOTAL)*100) + '%'; tt.textContent = fmt(newEnd); }
+      SECTIONS[i].end = Math.min(TOTAL, Math.max(drag.e0 + dt, SECTIONS[i].start + 1));
+      if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
+      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].end/TOTAL)*100) + '%'; tt.textContent = fmt(SECTIONS[i].end); }
     }
-    // actualizar posición visual del segmento
-    refreshSegPos(i);
-    if (dragging.side === 'l' && i > 0) refreshSegPos(i-1);
-    if (dragging.side === 'r' && i < SECTIONS.length-1) refreshSegPos(i+1);
+    refreshSeg(i);
+    if (drag.side === 'l' && i > 0) refreshSeg(i-1);
+    if (drag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
   });
 
   document.addEventListener('mouseup', function() {
-    if (!dragging) return;
-    document.getElementById('tls' + dragging.i).classList.remove('dragging');
+    if (!drag) return;
+    document.getElementById('tls' + drag.i).classList.remove('dragging');
     const tt = document.getElementById('tlTooltip');
     if (tt) tt.style.display = 'none';
-    dragging = null;
-    renderList();
+    renderSList();
+    drag = null;
   });
 }
 
-function refreshSegPos(i) {
+function refreshSeg(i) {
   const seg = document.getElementById('tls' + i);
   if (!seg || !SECTIONS[i]) return;
-  const left = (SECTIONS[i].start / TOTAL) * 100;
-  const w    = ((SECTIONS[i].end - SECTIONS[i].start) / TOTAL) * 100;
-  seg.style.left  = left + '%';
-  seg.style.width = w + '%';
+  seg.style.left  = (SECTIONS[i].start / TOTAL * 100) + '%';
+  seg.style.width = ((SECTIONS[i].end - SECTIONS[i].start) / TOTAL * 100) + '%';
 }
 
-function renderList() {
-  document.getElementById('secCount').textContent = `${currentSection + 1} / ${SECTIONS.length}`;
+// [009] BIBLIOTECA
+async function loadBib(artist = '') {
+  try {
+    const data = await apiFetch('/biblioteca' + (artist ? '?artist=' + encodeURIComponent(artist) : ''), 'GET', null, false);
+    renderBib(data.canciones);
+  } catch(e) { console.error(e); }
+}
+
+async function loadArtists() {
+  try {
+    const data = await apiFetch('/artistas', 'GET', null, false);
+    const panel = document.getElementById('artistsPanel');
+    panel.innerHTML = '<div class="artist-item active" onclick="loadBib()"><div class="artist-name">Todos</div></div>' +
+      data.map(a => '<div class="artist-item" onclick="loadBib(\'' + a.artist.replace(/'/g,'') + '\')"><div class="artist-name">' + a.artist + '</div><div class="artist-count">' + a.canciones + ' canciones · ' + a.analisis + ' análisis</div></div>').join('');
+  } catch(e) { console.error(e); }
+}
+
+function renderBib(canciones) {
+  const panel = document.getElementById('songsPanel');
+  if (!canciones || !canciones.length) {
+    panel.innerHTML = '<div style="color:var(--tx3);font-size:12px;grid-column:1/-1;padding:2rem;text-align:center">No hay canciones en la biblioteca todavía.<br>Analizá y guardá canciones para verlas aquí.</div>';
+    return;
+  }
+  panel.innerHTML = canciones.map(c => '<div class="song-card" onclick="openSongModal(' + c.id + ')">' +
+    '<div class="song-title">' + c.title + '</div>' +
+    '<div class="song-artist">' + c.artist + (c.album ? ' · ' + c.album : '') + '</div>' +
+    '<div class="song-meta">' +
+      (c.genre ? '<span class="song-tag">' + c.genre + '</span>' : '') +
+      (c.year ? '<span class="song-tag">' + c.year + '</span>' : '') +
+    '</div>' +
+    '<div class="song-analyses">◈ ' + (c.num_analisis || 0) + ' análisis</div>' +
+    '</div>').join('');
+}
+
+async function openSongModal(cancionId) {
+  try {
+    const data = await apiFetch('/canciones/' + cancionId + '/analisis', 'GET', null, false);
+    const cancion = await apiFetch('/biblioteca?search=', 'GET', null, false);
+    document.getElementById('modalSongTitle').textContent = 'Análisis disponibles';
+    document.getElementById('modalAnalisisList').innerHTML = data.length ?
+      data.map(a => '<div class="analysis-item" onclick="loadAnalisisById(' + a.id + ')">' +
+        '<div class="ai-label">' + a.version_label + '</div>' +
+        '<div class="ai-meta">' + (a.bpm ? a.bpm + ' BPM' : '') + (a.key_sig ? ' · ' + a.key_sig : '') + ' · ' + a.num_secciones + ' secciones</div>' +
+        '<div class="ai-user">por ' + a.username + '</div>' +
+        '<div class="ai-votes">▲ ' + (a.votos || 0) + ' votos</div>' +
+        '</div>').join('') :
+      '<div style="color:var(--tx3);font-size:12px">No hay análisis para esta canción.</div>';
+    document.getElementById('modalAnalisis').classList.add('show');
+  } catch(e) { setStatus('error', e.message); }
+}
+
+async function loadAnalisisById(id) {
+  closeModal('modalAnalisis');
+  showOv(true, 'CARGANDO', 'Recuperando análisis de la biblioteca...', 50, 'LOADING...');
+  try {
+    const data = await apiFetch('/analisis/' + id, 'GET', null, false);
+    const vid = data.youtube_id;
+    currentVideoId = vid;
+    document.getElementById('ytUrl').value = 'https://www.youtube.com/watch?v=' + vid;
+    const analysis = {
+      title: data.title, artist: data.artist, album: data.album,
+      total_duration: data.duration || 300, bpm: data.bpm, key: data.key_sig,
+      sections: data.sections.map(s => ({
+        id: String(s.orden + 1).padStart(2,'0'),
+        name: s.nombre, type: s.tipo, start: s.start_sec, end: s.end_sec,
+        time_signature: s.compas, bpm: s.bpm, key: s.key_sig,
+        feel: s.feel, chords: s.chords, rhythm_pattern: s.rhythm_pattern,
+        rhythm_label: s.rhythm_label, harmony: s.harmony,
+        rhythm_analysis: s.rhythm_analysis, color: s.color,
+        voicings: s.voicings, comment: s.comment
+      }))
+    };
+    currentAnalysis = analysis;
+    loadAnalysis(analysis, vid);
+    showView('analyzer');
+    setOvStep('LISTO', 100);
+    setTimeout(() => showOv(false), 400);
+  } catch(e) { showOv(false); setStatus('error', e.message); }
+}
+
+async function searchBib(q) {
+  try {
+    const data = await apiFetch('/biblioteca?search=' + encodeURIComponent(q), 'GET', null, false);
+    renderBib(data.canciones);
+  } catch(e) {}
+}
+
+// [010] RENDER UI
+const fmt = s => Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
+
+function setStatus(type, msg) {
+  const el = document.getElementById('statusBar');
+  el.className = 'status-bar ' + type;
+  el.textContent = msg;
+  if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+function showOv(show, title, sub, pct, step) {
+  document.getElementById('ov').classList.toggle('show', show);
+  if (show) {
+    if (title) document.getElementById('ovTitle').textContent = title;
+    if (sub)   document.getElementById('ovSub').textContent = sub;
+    if (pct !== undefined) document.getElementById('ovFill').style.width = pct + '%';
+    if (step)  document.getElementById('ovStep').textContent = step;
+  }
+}
+function setOvStep(step, pct) {
+  document.getElementById('ovStep').textContent = step;
+  document.getElementById('ovFill').style.width = pct + '%';
+}
+
+function updateTransport(t, i) {
+  if (!SECTIONS[i]) return;
+  const s = SECTIONS[i];
+  document.getElementById('nowSection').textContent = s.id + ' · ' + s.name;
+  document.getElementById('nowMeta').textContent = (s.time_signature || '4/4') + ' · ' + (s.key || '—') + ' · ' + (s.bpm || '—') + ' bpm';
+  document.getElementById('nowTime').textContent = fmt(t);
+}
+
+function renderSList() {
+  document.getElementById('secCount').textContent = (currentSection + 1) + ' / ' + SECTIONS.length;
   document.getElementById('slist').innerHTML = SECTIONS.map((s, i) =>
-    `<div class="si${i === currentSection ? ' active' : ''}" onclick="seekTo(${i})">
-      <span class="si-num">${s.id}</span>
-      <div class="si-dot" style="background:${gd(s.type)}"></div>
-      <span class="si-name">${s.name}</span>
-      <span class="si-time">${fmt(s.start)}</span>
-    </div>`
-  ).join('');
-  document.querySelector('.si.active')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    '<div class="sl-item' + (i === currentSection ? ' active' : '') + '" onclick="seekTo(' + i + ')">' +
+    '<span class="sl-num">' + s.id + '</span>' +
+    '<div class="sl-dot" style="background:' + gdot(s.type) + '"></div>' +
+    '<span class="sl-name">' + s.name + '</span>' +
+    '<span class="sl-time">' + fmt(s.start) + '</span>' +
+    '</div>').join('');
+  const active = document.querySelector('.sl-item.active');
+  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
-
-function ppEl(p) { return `<div class="pp ${p ? 'pps' : 'ppw'}">${p ? '●' : '·'}</div>`; }
 
 function renderDetail(i) {
   if (!SECTIONS[i]) return;
   const s = SECTIONS[i];
-  const cols = Math.min(4, s.chords?.length || 1);
-  const ac = gd(s.type);
-  document.getElementById('detail').innerHTML = `
-    <div class="det-head">
-      <div class="det-title" style="background:linear-gradient(90deg,${ac},var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${s.id}. ${s.name}</div>
-      <div class="det-meta">${fmt(s.start)} – ${fmt(s.end)} · ${Math.round(s.end - s.start)}s · ${s.key || '—'}</div>
-      <div class="det-badges">
-        <span class="db db-t">${s.time_signature || '4/4'}</span>
-        <span class="db db-k">${s.key || '—'}</span>
-        <span class="db db-f">${s.feel || '—'}</span>
-      </div>
-    </div>
-    <div class="det-body">
-      <div class="leg">
-        <div class="li"><div class="ld" style="background:var(--magenta)"></div>modal</div>
-        <div class="li"><div class="ld" style="background:var(--gold)"></div>mayor</div>
-        <div class="li"><div class="ld" style="background:var(--violet)"></div>tensión</div>
-        <div class="li"><div class="ld" style="background:var(--aurora1)"></div>resolución</div>
-        <div class="li"><div class="ld" style="background:var(--aurora4)"></div>jazz</div>
-      </div>
-      ${s.chords?.length ? `
-        <div>
-          <div class="sl">◈ ACORDES</div>
-          <div class="cgrid" style="grid-template-columns:repeat(${cols},1fr)">
-            ${s.chords.map(c => `
-              <div class="cbox ${c.type || 'neutral'}">
-                <span class="cb2">${c.beats || ''}</span>
-                <div class="cn">${c.name || '—'}</div>
-                <div class="cs">${c.function || ''}${c.note ? ' · ' + c.note : ''}</div>
-              </div>`).join('')}
-          </div>
-        </div>` : ''}
-      ${s.rhythm_pattern?.length ? `
-        <div>
-          <div class="sl">◈ RITMO</div>
-          <div class="rh-lbl">${s.rhythm_label || ''}</div>
-          <div class="rrow">${s.rhythm_pattern.map(ppEl).join('')}
-            <span class="rh-note">= 1 PULSO</span>
-          </div>
-        </div>` : ''}
-      ${s.comment ? `<div class="cmt">${s.comment}</div>` : ''}
-      <div class="mcards">
-        ${s.harmony         ? `<div class="mc"><div class="l">◈ ARMONÍA</div><div class="v">${s.harmony}</div></div>` : ''}
-        ${s.rhythm_analysis ? `<div class="mc"><div class="l">◈ RÍTMICA</div><div class="v">${s.rhythm_analysis}</div></div>` : ''}
-        ${s.color           ? `<div class="mc"><div class="l">◈ COLOR</div><div class="v">${s.color}</div></div>` : ''}
-        ${s.voicings        ? `<div class="mc"><div class="l">◈ VOICINGS</div><div class="v">${s.voicings}</div></div>` : ''}
-      </div>
-    </div>`;
+  const cols = Math.min(4, s.chords ? s.chords.length : 1) || 1;
+  document.getElementById('detailPanel').innerHTML =
+    '<div class="det-head">' +
+      '<div class="det-title">' + s.id + '. ' + s.name + '</div>' +
+      '<div class="det-meta">' + fmt(s.start) + ' – ' + fmt(s.end) + ' · ' + Math.round(s.end - s.start) + 's · ' + (s.key || '—') + '</div>' +
+      '<div class="det-badges">' +
+        '<span class="badge badge-time">' + (s.time_signature || '4/4') + '</span>' +
+        '<span class="badge badge-key">' + (s.key || '—') + '</span>' +
+        '<span class="badge badge-feel">' + (s.feel || '—') + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="legend">' +
+      '<div class="leg-item"><div class="leg-dot" style="background:#8b2020"></div>modal</div>' +
+      '<div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>mayor</div>' +
+      '<div class="leg-item"><div class="leg-dot" style="background:#5a2a7c"></div>tensión</div>' +
+      '<div class="leg-item"><div class="leg-dot" style="background:#2a6b3a"></div>resolución</div>' +
+      '<div class="leg-item"><div class="leg-dot" style="background:#2a6b7c"></div>jazz</div>' +
+    '</div>' +
+    (s.chords && s.chords.length ? (
+      '<div class="sec-label">ACORDES</div>' +
+      '<div class="chord-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">' +
+      s.chords.map(c =>
+        '<div class="chord-box ' + (c.type || 'neutral') + '">' +
+          '<span class="chord-beats">' + (c.beats || '') + '</span>' +
+          '<div class="chord-name">' + (c.name || '—') + '</div>' +
+          '<div class="chord-func">' + (c.function || '') + (c.note ? ' · ' + c.note : '') + '</div>' +
+        '</div>'
+      ).join('') + '</div>'
+    ) : '') +
+    (s.rhythm_pattern && s.rhythm_pattern.length ? (
+      '<div class="sec-label">RITMO</div>' +
+      '<div class="rh-label">' + (s.rhythm_label || '') + '</div>' +
+      '<div class="rh-row">' +
+      s.rhythm_pattern.map(p => '<div class="rh-pulse ' + (p ? 'rh-s' : 'rh-w') + '">' + (p ? '●' : '·') + '</div>').join('') +
+      '<span class="rh-note">= 1 pulso</span></div>'
+    ) : '') +
+    (s.comment ? '<div class="comment">' + s.comment + '</div>' : '') +
+    '<div class="mini-cards">' +
+      (s.harmony         ? '<div class="mini-card"><div class="l">ARMONÍA</div><div class="v">' + s.harmony + '</div></div>' : '') +
+      (s.rhythm_analysis ? '<div class="mini-card"><div class="l">RÍTMICA</div><div class="v">' + s.rhythm_analysis + '</div></div>' : '') +
+      (s.color           ? '<div class="mini-card"><div class="l">COLOR</div><div class="v">' + s.color + '</div></div>' : '') +
+      (s.voicings        ? '<div class="mini-card"><div class="l">VOICINGS</div><div class="v">' + s.voicings + '</div></div>' : '') +
+    '</div>';
 }
 
-// [008] AURORA ANIMATION
-(function() {
-  const canvas = document.getElementById('cosmos');
-  const ctx = canvas.getContext('2d');
-  let W, H;
-  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-  resize();
-  window.addEventListener('resize', resize);
-
-  const auroras = [
-    { color1: 'rgba(0,255,180,', color2: 'rgba(0,100,255,', speed: 0.4, amp: 0.12, freq: 2.1, y: 0.25 },
-    { color1: 'rgba(255,0,200,', color2: 'rgba(120,0,255,', speed: 0.3, amp: 0.10, freq: 1.7, y: 0.45 },
-    { color1: 'rgba(0,200,255,', color2: 'rgba(0,255,120,', speed: 0.5, amp: 0.08, freq: 2.5, y: 0.65 },
-    { color1: 'rgba(255,100,0,', color2: 'rgba(255,0,100,', speed: 0.2, amp: 0.09, freq: 1.3, y: 0.80 },
-  ];
-
-  function drawAurora(a, t) {
-    const yBase = H * a.y;
-    const thickness = H * a.amp;
-    for (let p = 0; p < 3; p++) {
-      const alpha = 0.025 - p * 0.007;
-      const pts = 80;
-      ctx.beginPath();
-      for (let xi = 0; xi <= pts; xi++) {
-        const x = (xi / pts) * W;
-        const w1 = Math.sin(x * a.freq / W * Math.PI * 2 + t * a.speed * 0.001);
-        const w2 = Math.sin(x * a.freq * 1.3 / W * Math.PI * 2 + t * a.speed * 0.0007 + 1);
-        const y = yBase + (w1 * 0.6 + w2 * 0.4) * (thickness - p * 20);
-        xi === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      const grad = ctx.createLinearGradient(0, yBase - thickness, 0, yBase + thickness);
-      grad.addColorStop(0, a.color1 + '0)');
-      grad.addColorStop(0.5, a.color1 + alpha + ')');
-      grad.addColorStop(1, a.color2 + '0)');
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = (thickness - p * 15) * 0.8;
-      ctx.stroke();
-    }
-  }
-
-  const particles = Array.from({ length: 60 }, () => ({
-    x: Math.random(), y: Math.random(),
-    r: Math.random() * 1.5 + 0.3,
-    color: ['#00f5ff','#ff00e5','#8b00ff','#00ffb3','#ffd700'][Math.floor(Math.random() * 5)],
-    alpha: Math.random() * 0.6 + 0.2,
-    tw: Math.random() * Math.PI * 2
-  }));
-
-  function animate(ts) {
-    ctx.clearRect(0, 0, W, H);
-    auroras.forEach(a => drawAurora(a, ts));
-    particles.forEach(p => {
-      p.tw += 0.02;
-      ctx.globalAlpha = p.alpha * (0.5 + 0.5 * Math.sin(p.tw));
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-    requestAnimationFrame(animate);
-  }
-  requestAnimationFrame(animate);
-})();
-
-// [009] INICIALIZACIÓN
-// ============================================================
-// CALIBRACIÓN DE TIMESTAMPS
-// ============================================================
-let calMode = false;
-let calIndex = 0;
-let calTimestamps = [];
-
-function openCalibration() {
-  const bar = document.getElementById('calBar');
-  bar.classList.toggle('active');
-  if (bar.classList.contains('active')) {
-    buildCalProgress();
-    document.getElementById('calInfo').textContent = 'Presioná START, dale play al video y clickeá MARCAR al inicio de cada sección';
-  }
+// VIEWS
+function showView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+  document.querySelectorAll('.nav-btn[id^=nav]').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById('nav' + view.charAt(0).toUpperCase() + view.slice(1));
+  if (nb) nb.classList.add('active');
+  if (view === 'biblioteca') { loadArtists(); loadBib(); }
 }
 
-function buildCalProgress() {
-  document.getElementById('calProgress').innerHTML = SECTIONS.map((s, i) =>
-    '<div class="cal-dot" id="caldot' + i + '" title="' + s.name + '"></div>'
-  ).join('');
-}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-function startCalibration() {
-  calMode = true;
-  calIndex = 0;
-  calTimestamps = new Array(SECTIONS.length).fill(null);
-
-  document.getElementById('btnCalStart').style.display = 'none';
-  document.getElementById('btnCalMark').style.display = 'flex';
-  document.getElementById('btnCalEnd').style.display = 'flex';
-
-  updateCalUI();
-
-  // Arrancar video desde el principio
-  if (ytPlayer && ytPlayer.seekTo) {
-    ytPlayer.seekTo(0, true);
-    ytPlayer.playVideo();
-  }
-}
-
-function markSection() {
-  if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
-  const t = ytPlayer.getCurrentTime();
-
-  calTimestamps[calIndex] = t;
-
-  // Marcar dot como done
-  const dot = document.getElementById('caldot' + calIndex);
-  if (dot) { dot.classList.remove('current'); dot.classList.add('done'); }
-
-  calIndex++;
-
-  if (calIndex >= SECTIONS.length) {
-    endCalibration();
-  } else {
-    updateCalUI();
-  }
-}
-
-function updateCalUI() {
-  const s = SECTIONS[calIndex];
-  if (!s) return;
-
-  document.getElementById('calInfo').textContent =
-    'Sección ' + (calIndex + 1) + ' / ' + SECTIONS.length + ': escuchá cuando empieza...';
-  document.getElementById('calNext').textContent = '→ ' + s.name;
-
-  // Marcar dot actual
-  const dot = document.getElementById('caldot' + calIndex);
-  if (dot) dot.classList.add('current');
-}
-
-function endCalibration() {
-  calMode = false;
-
-  // Aplicar timestamps calibrados
-  let applied = 0;
-  calTimestamps.forEach((t, i) => {
-    if (t !== null && SECTIONS[i]) {
-      SECTIONS[i].start = t;
-      if (i > 0 && calTimestamps[i-1] !== null) {
-        SECTIONS[i-1].end = t;
-      }
-      applied++;
-    }
-  });
-
-  // Último end = total duration
-  if (ytPlayer && ytPlayer.getDuration) {
-    const dur = ytPlayer.getDuration();
-    if (dur > 0) SECTIONS[SECTIONS.length - 1].end = dur;
-  }
-
-  // Reconstruir timeline con nuevos timestamps
-  buildTL();
-  renderList();
-
-  // Reset UI
-  document.getElementById('btnCalStart').style.display = 'flex';
-  document.getElementById('btnCalMark').style.display = 'none';
-  document.getElementById('btnCalEnd').style.display = 'none';
-  document.getElementById('calInfo').textContent = '✦ Calibración aplicada · ' + applied + ' secciones actualizadas';
-  document.getElementById('calNext').textContent = '';
-
-  // Marcar todos los dots como done
-  SECTIONS.forEach((s, i) => {
-    const dot = document.getElementById('caldot' + i);
-    if (dot) { dot.classList.remove('current'); dot.classList.add('done'); }
-  });
-}
-
+// [011] INICIALIZACIÓN
+updateAuthUI();
 document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalysis(); });
+
+// Si ya tiene token, ir directo al analyzer
+if (authToken && authUser) showView('analyzer');
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
