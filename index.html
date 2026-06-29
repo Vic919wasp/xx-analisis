@@ -207,7 +207,7 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .transport {
   background: var(--surface); border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: .5rem 1rem; display: flex; align-items: center; gap: 10px;
+  padding: .75rem 1rem; display: flex; align-items: center; gap: 12px;
 }
 .btn-play {
   width: 32px; height: 32px; border-radius: 50%;
@@ -218,12 +218,12 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .btn-play:hover { background: var(--gold2); box-shadow: 0 0 10px rgba(184,150,46,0.4); }
 .btn-play:disabled { opacity: .3; cursor: not-allowed; }
 .now-section {
-  font-family: var(--fc); font-size: 12px; color: var(--gold2);
+  font-family: var(--fc); font-size: 15px; color: var(--gold2);
   letter-spacing: .06em; flex: 1; min-width: 0; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
 .now-meta { font-family: var(--fm); font-size: 10px; color: var(--tx3); }
-.now-time { font-family: var(--fm); font-size: 13px; color: var(--silver2); min-width: 40px; }
+.now-time { font-family: var(--fm); font-size: 16px; color: var(--silver2); min-width: 48px; }
 .sync-label { font-size: 10px; color: var(--tx3); }
 .sync-slider { accent-color: var(--gold); width: 80px; }
 .sync-val { font-family: var(--fm); font-size: 10px; color: var(--gold); min-width: 32px; }
@@ -234,7 +234,7 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .tl-title { font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; }
 .tl-hint { font-size: 9px; color: var(--tx3); font-style: italic; }
 .timeline {
-  position: relative; height: 44px; background: var(--surface);
+  position: relative; height: 56px; background: var(--surface);
   border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; cursor: pointer;
 }
 .tl-playhead {
@@ -246,16 +246,19 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
   border: 4px solid transparent; border-top-color: var(--gold);
 }
 .tl-seg {
-  position: absolute; top: 2px; bottom: 2px;
+  position: absolute; top: 3px; bottom: 3px;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--fm); font-size: 8px; color: rgba(255,255,255,.4);
-  border-radius: 3px; cursor: pointer; user-select: none;
-  border: 1px solid rgba(255,255,255,0.08); overflow: hidden;
-  transition: border-color .15s;
+  font-family: var(--fr); font-size: 9px; color: rgba(255,255,255,.5);
+  border-radius: 4px; cursor: pointer; user-select: none;
+  border: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+  transition: border-color .2s, opacity .2s;
 }
 .tl-seg:hover { border-color: rgba(255,255,255,.3); color: #fff; z-index: 5; }
 .tl-seg.active { border-color: var(--gold); color: var(--gold2); z-index: 6; }
 .tl-seg.dragging { z-index: 20; opacity: .8; border-color: var(--gold2); }
+.tl-seg.disabled { opacity: .25; }
+.sl-item.disabled { opacity: .35; }
+.sl-item.disabled .sl-name { text-decoration: line-through; color: var(--tx3); }
 .tl-handle {
   position: absolute; top: 0; bottom: 0; width: 6px; cursor: ew-resize;
   z-index: 7; transition: background .15s;
@@ -280,10 +283,10 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .det-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; gap: 10px; color: var(--tx3); }
 .det-empty-icon { font-family: var(--fc); font-size: 32px; color: var(--gold); opacity: .2; }
 .det-head { margin-bottom: 1rem; padding-bottom: .875rem; border-bottom: 1px solid var(--border); }
-.det-title { font-family: var(--fc); font-size: 16px; color: var(--gold2); letter-spacing: .05em; }
+.det-title { font-family: var(--fc); font-size: 19px; color: var(--gold2); letter-spacing: .05em; }
 .det-meta  { font-size: 11px; color: var(--tx2); margin-top: 3px; font-family: var(--fm); }
 .det-badges { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
-.badge { font-size: 9px; padding: 2px 6px; border-radius: 2px; border: 1px solid; letter-spacing: .06em; font-family: var(--fm); }
+.badge { font-size: 10px; padding: 3px 8px; border-radius: 2px; border: 1px solid; letter-spacing: .06em; font-family: var(--fm); }
 .badge-time  { background: rgba(42,107,124,0.15); color: #5aa0b0; border-color: rgba(42,107,124,0.4); }
 .badge-key   { background: rgba(184,150,46,0.12); color: var(--gold2); border-color: rgba(184,150,46,0.3); }
 .badge-feel  { background: rgba(90,42,124,0.15); color: #9a70c0; border-color: rgba(90,42,124,0.4); }
@@ -298,8 +301,8 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 /* CHORD GRID */
 .chord-grid { display: grid; gap: 4px; margin-bottom: .875rem; }
 .chord-box {
-  border: 1px solid var(--border); border-left: 2px solid var(--tx3);
-  border-radius: var(--r); padding: 6px 8px; min-height: 44px;
+  border: 1px solid var(--border); border-left: 3px solid var(--tx3);
+  border-radius: var(--r); padding: 10px 12px; min-height: 58px;
   position: relative; background: var(--surface);
 }
 .chord-box.modal   { border-left-color: #8b2020; }
@@ -308,7 +311,7 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .chord-box.jazz    { border-left-color: #2a6b7c; }
 .chord-box.bright  { border-left-color: var(--gold); }
 .chord-box.neutral { border-left-color: var(--tx3); }
-.chord-name { font-family: var(--fc); font-size: 14px; color: var(--tx); }
+.chord-name { font-family: var(--fc); font-size: 17px; color: var(--tx); }
 .chord-func { font-size: 9px; color: var(--tx2); margin-top: 2px; font-family: var(--fm); }
 .chord-beats { position: absolute; top: 4px; right: 6px; font-size: 9px; color: var(--tx3); font-family: var(--fm); }
 
@@ -321,13 +324,13 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .rh-note { font-size: 9px; color: var(--tx3); margin-left: 5px; }
 
 /* COMMENT */
-.comment { font-size: 11px; color: var(--tx2); font-style: italic; line-height: 1.7; padding-left: 10px; border-left: 2px solid var(--gold); margin-bottom: .875rem; }
+.comment { font-size: 12px; color: var(--tx2); font-style: italic; line-height: 1.7; padding-left: 12px; border-left: 2px solid var(--gold); margin-bottom: .875rem; }
 
 /* MINI CARDS */
 .mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .mini-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 9px; }
 .mini-card .l { font-size: 9px; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
-.mini-card .v { font-size: 10px; color: var(--tx2); line-height: 1.5; }
+.mini-card .v { font-size: 11px; color: var(--tx2); line-height: 1.6; }
 
 /* LEGEND */
 .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: .75rem; }
@@ -338,12 +341,12 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .section-list { overflow-y: auto; border-top: 1px solid var(--border); }
 .sl-header { padding: .5rem .875rem; border-bottom: 1px solid var(--border); font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between; }
 .sl-header span { color: var(--gold2); text-transform: none; letter-spacing: 0; font-size: 11px; }
-.sl-item { display: flex; align-items: center; gap: 6px; padding: .4rem .875rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+.sl-item { display: flex; align-items: center; gap: 8px; padding: .625rem .875rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
 .sl-item:hover { background: var(--surface2); }
 .sl-item.active { background: rgba(184,150,46,0.08); border-left: 2px solid var(--gold); padding-left: calc(.875rem - 2px); }
-.sl-num  { font-family: var(--fm); font-size: 9px; color: var(--tx3); min-width: 20px; }
-.sl-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.sl-name { font-size: 11px; color: var(--tx); flex: 1; }
+.sl-num  { font-family: var(--fm); font-size: 10px; color: var(--tx3); min-width: 24px; }
+.sl-dot  { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; transition: opacity .2s; }
+.sl-name { font-size: 12px; color: var(--tx); flex: 1; }
 .sl-time { font-family: var(--fm); font-size: 9px; color: var(--tx3); }
 
 /* ── BIBLIOTECA VIEW ── */
@@ -584,18 +587,36 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 const BACKEND = 'https://xx-analysis-backend.onrender.com';
 window.GEMINI_KEY = '__GEMINI_API_KEY__';
 
-let SECTIONS = [], TOTAL = 0, currentSection = 0;
+let SECTIONS = [], TOTAL = 0, currentSection = 0, disabledSections = new Set();
 let ytPlayer = null, syncInterval = null, offsetSecs = 0;
 let currentAnalysis = null, currentVideoId = '';
 let authToken = localStorage.getItem('xx_token');
 let authUser  = JSON.parse(localStorage.getItem('xx_user') || 'null');
 
 // Colores por tipo
-const TYPE_BG  = { intro:'#0d0a06', riff:'#1a0808', verse:'#06080d', chorus:'#06100a', bridge:'#100a06', solo:'#060d08', break:'#1a0808', outro:'#0a0a0a', instrumental:'#06080d', precoro:'#0d0608' };
-const TYPE_DOT = { intro:'#6b5a20', riff:'#8b2020', verse:'#2a5a7c', chorus:'#2a7a3a', bridge:'#7c6a20', solo:'#3a7a4a', break:'#8b2020', outro:'#4a4845', instrumental:'#2a6b7c', precoro:'#5a2a7c' };
-const gbg  = t => TYPE_BG[t?.toLowerCase()]  || '#0d0d0d';
-const gdot = t => TYPE_DOT[t?.toLowerCase()] || '#6b5a20';
-
+// Paleta por tipo — bg (timeline), accent (dot/borde), label
+const TYPES = {
+  intro:        { bg:'#0f0e14', accent:'#6b5a8b', label:'#9a80c8' },
+  riff:         { bg:'#140808', accent:'#8b2020', label:'#c84040' },
+  verse:        { bg:'#080c14', accent:'#1a4a7a', label:'#4a8ec8' },
+  estrofa:      { bg:'#080c14', accent:'#1a4a7a', label:'#4a8ec8' },
+  'pre-coro':   { bg:'#0e0814', accent:'#5a1a8b', label:'#9a50c8' },
+  precoro:      { bg:'#0e0814', accent:'#5a1a8b', label:'#9a50c8' },
+  chorus:       { bg:'#0a0d06', accent:'#7a6010', label:'#c8a020' },
+  coro:         { bg:'#0a0d06', accent:'#7a6010', label:'#c8a020' },
+  bridge:       { bg:'#100c06', accent:'#7a4a10', label:'#c87a30' },
+  puente:       { bg:'#100c06', accent:'#7a4a10', label:'#c87a30' },
+  instrumental: { bg:'#061014', accent:'#106070', label:'#20a0b8' },
+  solo:         { bg:'#060e08', accent:'#1a6030', label:'#30b060' },
+  break:        { bg:'#140608', accent:'#8b1020', label:'#c82040' },
+  outro:        { bg:'#0a0a0a', accent:'#3a3a3a', label:'#707070' },
+  cambio:       { bg:'#0e0e06', accent:'#707010', label:'#c8c820' },
+};
+const TDEF = { bg:'#0d0d0d', accent:'#5a4a20', label:'#8a7a40' };
+const gt = t => TYPES[t?.toLowerCase()] || TDEF;
+const gbg  = t => gt(t).bg;
+const gdot = t => gt(t).accent;
+const glbl = t => gt(t).label;
 // [005] AUTH
 function updateAuthUI() {
   const loggedIn = !!authToken && !!authUser;
@@ -713,7 +734,7 @@ function startSync() {
   }, 150);
 }
 function stopSync() { if (syncInterval) { clearInterval(syncInterval); syncInterval = null; } }
-function getSectionAt(t) { for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start) return i; return 0; }
+function getSectionAt(t) { for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start && !disabledSections.has(i)) return i; for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start) return i; return 0; }
 function updateSync(v) { offsetSecs = parseFloat(v); document.getElementById('syncVal').textContent = parseFloat(v).toFixed(1) + 's'; }
 
 function seekTo(i) {
@@ -782,6 +803,7 @@ async function startAnalysis() {
 
 function loadAnalysis(data, vid) {
   SECTIONS = data.sections;
+  disabledSections = new Set();
   TOTAL = data.total_duration || SECTIONS[SECTIONS.length-1]?.end || 300;
   currentSection = 0;
   buildTL(); renderSList(); renderDetail(0); updateTransport(0, 0); updatePlayhead(0);
@@ -845,12 +867,20 @@ function buildTL() {
   SECTIONS.forEach((s, i) => {
     const left = (s.start / TOTAL) * 100;
     const w = ((s.end - s.start) / TOTAL) * 100;
+    const disabled = disabledSections.has(i);
+    const accent = gt(s.type).accent;
+    const label = gt(s.type).label;
     const seg = document.createElement('div');
-    seg.className = 'tl-seg'; seg.id = 'tls' + i;
-    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gbg(s.type);
-    seg.innerHTML = '<div class="tl-handle tl-handle-l" data-i="' + i + '" data-side="l"></div>' +
-                    '<span style="pointer-events:none;font-size:8px;overflow:hidden;padding:0 4px;white-space:nowrap">' + s.id + '</span>' +
-                    '<div class="tl-handle tl-handle-r" data-i="' + i + '" data-side="r"></div>';
+    seg.className = 'tl-seg' + (disabled ? ' disabled' : '');
+    seg.id = 'tls' + i;
+    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gbg(s.type) + ';border-color:' + accent + '44';
+    seg.innerHTML =
+      '<div class="tl-handle tl-handle-l" data-i="' + i + '" data-side="l" style="background:linear-gradient(90deg,' + accent + '66,transparent)"></div>' +
+      '<div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:1px;overflow:hidden;padding:0 6px;width:100%">' +
+        '<span style="font-size:9px;color:' + label + ';font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;width:100%;text-align:center;text-shadow:0 0 6px ' + accent + '">' + s.name + '</span>' +
+        '<span style="font-size:8px;color:' + accent + ';white-space:nowrap;font-family:var(--fm)">' + fmt(s.start) + '</span>' +
+      '</div>' +
+      '<div class="tl-handle tl-handle-r" data-i="' + i + '" data-side="r" style="background:linear-gradient(270deg,' + accent + '66,transparent)"></div>';
     seg.addEventListener('click', function(e) { if (!e.target.dataset.side) seekTo(i); });
     tl.appendChild(seg);
   });
@@ -864,7 +894,11 @@ function updatePlayhead(t) {
   if (ph) ph.style.left = pct + '%';
   SECTIONS.forEach((s, i) => {
     const seg = document.getElementById('tls' + i);
-    if (seg) seg.classList.toggle('active', i === currentSection);
+    if (!seg) return;
+    const isActive = i === currentSection && !disabledSections.has(i);
+    seg.classList.toggle('active', isActive);
+    if (isActive) seg.style.borderColor = gt(s.type).label;
+    else seg.style.borderColor = gt(s.type).accent + '44';
   });
 }
 
@@ -1037,17 +1071,32 @@ function updateTransport(t, i) {
   document.getElementById('nowTime').textContent = fmt(t);
 }
 
+function toggleSection(i) {
+  if (disabledSections.has(i)) disabledSections.delete(i);
+  else disabledSections.add(i);
+  renderSList();
+  buildTL();
+}
+
 function renderSList() {
-  document.getElementById('secCount').textContent = (currentSection + 1) + ' / ' + SECTIONS.length;
-  document.getElementById('slist').innerHTML = SECTIONS.map((s, i) =>
-    '<div class="sl-item' + (i === currentSection ? ' active' : '') + '" onclick="seekTo(' + i + ')">' +
-    '<span class="sl-num">' + s.id + '</span>' +
-    '<div class="sl-dot" style="background:' + gdot(s.type) + '"></div>' +
-    '<span class="sl-name">' + s.name + '</span>' +
-    '<span class="sl-time">' + fmt(s.start) + '</span>' +
-    '</div>').join('');
-  const active = document.querySelector('.sl-item.active');
-  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  const active = SECTIONS.filter((_, i) => !disabledSections.has(i)).length;
+  document.getElementById('secCount').textContent = active + ' activas / ' + SECTIONS.length;
+  document.getElementById('slist').innerHTML = SECTIONS.map((s, i) => {
+    const disabled = disabledSections.has(i);
+    const isCurrent = i === currentSection;
+    const accent = glbl(s.type);
+    return '<div class="sl-item' + (isCurrent && !disabled ? ' active' : '') + (disabled ? ' disabled' : '') + '" ' +
+      'style="border-left-color:' + (isCurrent && !disabled ? accent : 'transparent') + ';position:relative">' +
+      '<span class="sl-num">' + s.id + '</span>' +
+      '<div class="sl-dot" style="background:' + (disabled ? '#2a2a2a' : accent) + ';box-shadow:' + (disabled ? 'none' : '0 0 6px ' + accent + '88') + '"></div>' +
+      '<span class="sl-name" style="color:' + (disabled ? 'var(--tx3)' : 'var(--tx)') + '">' + s.name + '</span>' +
+      '<span style="font-size:9px;color:var(--tx3);font-family:var(--fm);letter-spacing:.04em;margin-right:6px">' + (s.time_signature || '4/4') + '</span>' +
+      '<span class="sl-time">' + fmt(s.start) + '</span>' +
+      '<button onclick="event.stopPropagation();toggleSection(' + i + ')" style="margin-left:6px;background:none;border:1px solid ' + (disabled ? '#3a3a3a' : accent + '66') + ';border-radius:3px;color:' + (disabled ? '#3a3a3a' : accent) + ';cursor:pointer;font-size:9px;padding:1px 5px;transition:all .15s" title="' + (disabled ? 'Activar' : 'Desactivar') + '">' + (disabled ? '✗' : '✓') + '</button>' +
+      '</div>';
+  }).join('');
+  const activeEl = document.querySelector('.sl-item.active');
+  if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function renderDetail(i) {
