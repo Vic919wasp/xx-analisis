@@ -275,6 +275,80 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
   transform: translateX(-50%); white-space: nowrap; display: none;
 }
 
+/* SECTION CARDS — lista horizontal debajo del video */
+.sec-cards-wrap {
+  background: var(--deep);
+  border-bottom: 1px solid var(--border);
+  padding: .5rem 1rem;
+}
+.sec-cards-label {
+  font-size: 9px; color: var(--tx3); letter-spacing: .1em;
+  text-transform: uppercase; margin-bottom: .5rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.sec-cards-label button {
+  font-size: 9px; color: var(--tx3); background: none;
+  border: 1px solid var(--border); border-radius: 2px;
+  padding: 2px 7px; cursor: pointer; transition: all .15s;
+}
+.sec-cards-label button:hover { border-color: var(--gold); color: var(--gold); }
+.sec-cards {
+  display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: thin; scrollbar-color: var(--gold) transparent;
+}
+.sec-cards::-webkit-scrollbar { height: 3px; }
+.sec-cards::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+.sec-card {
+  flex-shrink: 0; min-width: 100px; max-width: 160px;
+  border-radius: 4px; border: 1px solid rgba(255,255,255,.08);
+  padding: 6px 8px; cursor: grab; position: relative;
+  transition: box-shadow .15s, opacity .2s;
+  user-select: none;
+}
+.sec-card:active { cursor: grabbing; }
+.sec-card.dragging-card { opacity: .5; box-shadow: 0 0 15px rgba(184,150,46,.5); }
+.sec-card.drag-over { outline: 2px solid var(--gold); outline-offset: 1px; }
+.sec-card.disabled-card { opacity: .3; }
+
+.sc-type {
+  font-size: 8px; letter-spacing: .08em; font-family: var(--fr);
+  font-weight: 600; text-transform: uppercase; margin-bottom: 3px;
+}
+.sc-name {
+  font-size: 11px; color: var(--tx); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;
+}
+.sc-time { font-family: var(--fm); font-size: 9px; color: var(--tx3); }
+.sc-actions {
+  display: flex; gap: 3px; margin-top: 5px;
+}
+.sc-btn {
+  flex: 1; padding: 2px 4px; background: rgba(0,0,0,.4);
+  border: 1px solid rgba(255,255,255,.08); border-radius: 2px;
+  color: var(--tx3); cursor: pointer; font-size: 9px;
+  transition: all .15s; text-align: center;
+}
+.sc-btn:hover { color: var(--tx); border-color: rgba(255,255,255,.2); }
+.sc-btn.delete:hover { color: #c84040; border-color: #c84040; }
+.sc-btn.toggle-btn { }
+.sc-btn.toggle-btn.off { color: var(--tx3); }
+
+/* Popup editor de tipo */
+.type-popup {
+  position: fixed; background: var(--surface);
+  border: 1px solid var(--gold); border-radius: var(--r);
+  padding: 8px; z-index: 500; box-shadow: 0 0 20px rgba(0,0,0,.8);
+  display: none; flex-wrap: wrap; gap: 4px; max-width: 240px;
+}
+.type-popup.show { display: flex; }
+.tp-opt {
+  padding: 4px 8px; border-radius: 3px; cursor: pointer;
+  font-size: 10px; font-family: var(--fr); border: 1px solid;
+  transition: all .15s; white-space: nowrap;
+}
+.tp-opt:hover { filter: brightness(1.4); }
+
 /* MAIN CONTENT */
 .main-content { display: grid; grid-template-columns: 1fr 280px; flex: 1; overflow: hidden; }
 
@@ -548,6 +622,18 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
         </div>
       </div>
 
+      <!-- TYPE POPUP -->
+      <div class="type-popup" id="typePopup"></div>
+
+      <!-- SECTION CARDS — horizontal, draggable, editable -->
+      <div class="sec-cards-wrap" id="secCardsWrap" style="display:none">
+        <div class="sec-cards-label">
+          <span>SECCIONES — arrastrá para reordenar · click en tipo para cambiar · ✕ para eliminar</span>
+          <button onclick="addSection()">+ AGREGAR</button>
+        </div>
+        <div class="sec-cards" id="secCards"></div>
+      </div>
+
       <!-- Main -->
       <div class="main-content">
         <!-- Detail -->
@@ -806,7 +892,7 @@ function loadAnalysis(data, vid) {
   disabledSections = new Set();
   TOTAL = data.total_duration || SECTIONS[SECTIONS.length-1]?.end || 300;
   currentSection = 0;
-  buildTL(); renderSList(); renderDetail(0); updateTransport(0, 0); updatePlayhead(0);
+  buildTL(); buildSecCards(); renderSList(); renderDetail(0); updateTransport(0, 0); updatePlayhead(0);
   document.getElementById('btnSave').classList.toggle('show', !!authToken);
   setStatus('success', (data.artist || '') + ' — ' + (data.title || '') + ' · ' + SECTIONS.length + ' secciones');
   if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
@@ -856,6 +942,160 @@ function repairJson(s) {
   let r = s.split('').reduce((a,c) => c==='[' ? a+1 : c===']' ? a-1 : a, 0);
   if (o > 0 || r > 0) { const l = s.lastIndexOf('},'); if (l > 0) { s = s.slice(0, l+1); o = s.split('').reduce((a,c) => c==='{' ? a+1 : c==='}' ? a-1 : a, 0); r = s.split('').reduce((a,c) => c==='[' ? a+1 : c===']' ? a-1 : a, 0); } s += ']'.repeat(Math.max(0,r)) + '}'.repeat(Math.max(0,o)); }
   return s;
+}
+
+// ============================================================
+// SECTION CARDS — horizontal draggable list
+// ============================================================
+const ALL_TYPES = ['intro','verse','pre-coro','chorus','bridge','solo','riff','instrumental','break','outro'];
+const TYPE_LABELS = { intro:'INTRO', verse:'VERSO', 'pre-coro':'PRE-CORO', chorus:'CORO', bridge:'PUENTE', solo:'SOLO', riff:'RIFF', instrumental:'INSTR.', break:'BREAK', outro:'OUTRO', estrofa:'ESTROFA', precoro:'PRE-CORO', coro:'CORO', puente:'PUENTE', cambio:'TEMPO' };
+
+let dragSrcIdx = null;
+
+function buildSecCards() {
+  const wrap = document.getElementById('secCardsWrap');
+  const container = document.getElementById('secCards');
+  if (!SECTIONS.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  container.innerHTML = SECTIONS.map((s, i) => {
+    const T = gt(s.type);
+    const disabled = disabledSections.has(i);
+    return '<div class="sec-card' + (disabled ? ' disabled-card' : '') + '" id="scard' + i + '" ' +
+      'draggable="true" ' +
+      'ondragstart="cardDragStart(event,' + i + ')" ' +
+      'ondragover="cardDragOver(event,' + i + ')" ' +
+      'ondrop="cardDrop(event,' + i + ')" ' +
+      'ondragend="cardDragEnd()" ' +
+      'onclick="seekTo(' + i + ')" ' +
+      'style="background:' + T.bg + ';border-color:' + T.accent + '66">' +
+      '<div class="sc-type" style="color:' + T.label + ';cursor:pointer" onclick="event.stopPropagation();openTypePopup(' + i + ',this)">' +
+        (TYPE_LABELS[s.type?.toLowerCase()] || (s.type || 'TIPO').toUpperCase()) + ' ▾' +
+      '</div>' +
+      '<div class="sc-name">' + s.name + '</div>' +
+      '<div class="sc-time">' + fmt(s.start) + ' – ' + fmt(s.end) + '</div>' +
+      '<div class="sc-actions">' +
+        '<button class="sc-btn toggle-btn' + (disabled ? ' off' : '') + '" onclick="event.stopPropagation();toggleSection(' + i + ')" title="' + (disabled ? 'Activar' : 'Desactivar') + '">' +
+          (disabled ? '✗' : '✓') + '</button>' +
+        '<button class="sc-btn" onclick="event.stopPropagation();editSectionName(' + i + ')" title="Editar nombre">✎</button>' +
+        '<button class="sc-btn delete" onclick="event.stopPropagation();deleteSection(' + i + ')" title="Eliminar">✕</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function cardDragStart(e, i) {
+  dragSrcIdx = i;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { const c = document.getElementById('scard' + i); if (c) c.classList.add('dragging-card'); }, 0);
+}
+
+function cardDragOver(e, i) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.sec-card').forEach(c => c.classList.remove('drag-over'));
+  const c = document.getElementById('scard' + i);
+  if (c && i !== dragSrcIdx) c.classList.add('drag-over');
+}
+
+function cardDrop(e, targetIdx) {
+  e.preventDefault();
+  if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+  // Reordenar SECTIONS
+  const moved = SECTIONS.splice(dragSrcIdx, 1)[0];
+  SECTIONS.splice(targetIdx, 0, moved);
+  // Actualizar disabledSections
+  const newDisabled = new Set();
+  disabledSections.forEach(di => {
+    if (di === dragSrcIdx) newDisabled.add(targetIdx);
+    else if (dragSrcIdx < targetIdx && di > dragSrcIdx && di <= targetIdx) newDisabled.add(di - 1);
+    else if (dragSrcIdx > targetIdx && di >= targetIdx && di < dragSrcIdx) newDisabled.add(di + 1);
+    else newDisabled.add(di);
+  });
+  disabledSections = newDisabled;
+  dragSrcIdx = null;
+  refreshAll();
+}
+
+function cardDragEnd() {
+  dragSrcIdx = null;
+  document.querySelectorAll('.sec-card').forEach(c => { c.classList.remove('dragging-card'); c.classList.remove('drag-over'); });
+}
+
+function deleteSection(i) {
+  if (!confirm('Eliminar sección "' + SECTIONS[i].name + '"?')) return;
+  SECTIONS.splice(i, 1);
+  const newDisabled = new Set();
+  disabledSections.forEach(di => { if (di < i) newDisabled.add(di); else if (di > i) newDisabled.add(di - 1); });
+  disabledSections = newDisabled;
+  if (currentSection >= SECTIONS.length) currentSection = Math.max(0, SECTIONS.length - 1);
+  refreshAll();
+}
+
+function addSection() {
+  const lastEnd = SECTIONS.length ? SECTIONS[SECTIONS.length - 1].end : TOTAL;
+  const newSec = {
+    id: String(SECTIONS.length + 1).padStart(2, '0'),
+    name: 'Nueva sección',
+    type: 'verse',
+    start: lastEnd,
+    end: Math.min(TOTAL, lastEnd + 30),
+    time_signature: '4/4',
+    bpm: currentAnalysis ? currentAnalysis.bpm : 120,
+    key: currentAnalysis ? currentAnalysis.key : '—',
+    chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
+    feel: '—', harmony: '—', rhythm_analysis: '—', color: '—', voicings: '—'
+  };
+  SECTIONS.push(newSec);
+  refreshAll();
+  // scroll al final
+  setTimeout(() => {
+    const cards = document.getElementById('secCards');
+    if (cards) cards.scrollLeft = cards.scrollWidth;
+  }, 100);
+}
+
+function editSectionName(i) {
+  const newName = prompt('Nombre de la sección:', SECTIONS[i].name);
+  if (newName && newName.trim()) {
+    SECTIONS[i].name = newName.trim();
+    refreshAll();
+  }
+}
+
+// TYPE POPUP
+function openTypePopup(i, anchor) {
+  const popup = document.getElementById('typePopup');
+  const rect = anchor.getBoundingClientRect();
+  popup.style.left = rect.left + 'px';
+  popup.style.top  = (rect.bottom + 4) + 'px';
+  popup.innerHTML = ALL_TYPES.map(t => {
+    const T = gt(t);
+    return '<div class="tp-opt" style="background:' + T.bg + ';border-color:' + T.accent + ';color:' + T.label + '" ' +
+      'onclick="setType(' + i + ','' + t + '');closeTypePopup()">' +
+      (TYPE_LABELS[t] || t.toUpperCase()) + '</div>';
+  }).join('');
+  popup.classList.add('show');
+  setTimeout(() => document.addEventListener('click', closeTypePopup, { once: true }), 10);
+}
+
+function setType(i, type) {
+  SECTIONS[i].type = type;
+  refreshAll();
+}
+
+function closeTypePopup() {
+  const popup = document.getElementById('typePopup');
+  if (popup) popup.classList.remove('show');
+}
+
+function refreshAll() {
+  // renumerar IDs
+  SECTIONS.forEach((s, i) => { s.id = String(i + 1).padStart(2, '0'); });
+  buildTL();
+  buildSecCards();
+  renderSList();
+  renderDetail(currentSection);
 }
 
 // [008] TIMELINE DRAG
@@ -1076,6 +1316,7 @@ function toggleSection(i) {
   else disabledSections.add(i);
   renderSList();
   buildTL();
+  buildSecCards();
 }
 
 function renderSList() {
