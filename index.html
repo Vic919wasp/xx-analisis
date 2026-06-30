@@ -1267,34 +1267,60 @@ async function loadArtists() {
 
 function renderBib(canciones) {
   const panel = document.getElementById('songsPanel');
+  panel.innerHTML = '';
   if (!canciones || !canciones.length) {
-    panel.innerHTML = '<div style="color:var(--tx3);font-size:12px;grid-column:1/-1;padding:2rem;text-align:center">No hay canciones en la biblioteca todavía.<br>Analizá y guardá canciones para verlas aquí.</div>';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:var(--tx3);font-size:12px;grid-column:1/-1;padding:2rem;text-align:center';
+    msg.innerHTML = 'No hay canciones en la biblioteca todavía.<br>Analizá y guardá canciones para verlas aquí.';
+    panel.appendChild(msg);
     return;
   }
-  panel.innerHTML = canciones.map(c => '<div class="song-card" onclick="openSongModal(' + c.id + ')">' +
-    '<div class="song-title">' + c.title + '</div>' +
-    '<div class="song-artist">' + c.artist + (c.album ? ' · ' + c.album : '') + '</div>' +
-    '<div class="song-meta">' +
-      (c.genre ? '<span class="song-tag">' + c.genre + '</span>' : '') +
-      (c.year ? '<span class="song-tag">' + c.year + '</span>' : '') +
-    '</div>' +
-    '<div class="song-analyses">◈ ' + (c.num_analisis || 0) + ' análisis</div>' +
-    '</div>').join('');
+  canciones.forEach(function(c) {
+    const card = document.createElement('div');
+    card.className = 'song-card';
+    card.addEventListener('click', function() { openSongModal(c.id); });
+    const title = document.createElement('div');
+    title.className = 'song-title';
+    title.textContent = c.title;
+    const artist = document.createElement('div');
+    artist.className = 'song-artist';
+    artist.textContent = c.artist + (c.album ? ' · ' + c.album : '');
+    const meta = document.createElement('div');
+    meta.className = 'song-meta';
+    if (c.genre) { const t = document.createElement('span'); t.className = 'song-tag'; t.textContent = c.genre; meta.appendChild(t); }
+    if (c.year)  { const t = document.createElement('span'); t.className = 'song-tag'; t.textContent = c.year;  meta.appendChild(t); }
+    const analyses = document.createElement('div');
+    analyses.className = 'song-analyses';
+    analyses.textContent = '◈ ' + (c.num_analisis || 0) + ' análisis';
+    card.appendChild(title); card.appendChild(artist); card.appendChild(meta); card.appendChild(analyses);
+    panel.appendChild(card);
+  });
 }
 
 async function openSongModal(cancionId) {
   try {
     const data = await apiFetch('/canciones/' + cancionId + '/analisis', 'GET', null, false);
-    const cancion = await apiFetch('/biblioteca?search=', 'GET', null, false);
     document.getElementById('modalSongTitle').textContent = 'Análisis disponibles';
-    document.getElementById('modalAnalisisList').innerHTML = data.length ?
-      data.map(a => '<div class="analysis-item" onclick="loadAnalisisById(' + a.id + ')">' +
-        '<div class="ai-label">' + a.version_label + '</div>' +
-        '<div class="ai-meta">' + (a.bpm ? a.bpm + ' BPM' : '') + (a.key_sig ? ' · ' + a.key_sig : '') + ' · ' + a.num_secciones + ' secciones</div>' +
-        '<div class="ai-user">por ' + a.username + '</div>' +
-        '<div class="ai-votes">▲ ' + (a.votos || 0) + ' votos</div>' +
-        '</div>').join('') :
-      '<div style="color:var(--tx3);font-size:12px">No hay análisis para esta canción.</div>';
+    const list = document.getElementById('modalAnalisisList');
+    list.innerHTML = '';
+    if (!data.length) {
+      list.textContent = 'No hay análisis para esta canción.';
+      list.style.color = 'var(--tx3)';
+      list.style.fontSize = '12px';
+    } else {
+      data.forEach(function(a) {
+        const item = document.createElement('div');
+        item.className = 'analysis-item';
+        item.addEventListener('click', function() { loadAnalisisById(a.id); });
+        const lbl = document.createElement('div'); lbl.className = 'ai-label'; lbl.textContent = a.version_label;
+        const meta = document.createElement('div'); meta.className = 'ai-meta';
+        meta.textContent = (a.bpm ? a.bpm + ' BPM' : '') + (a.key_sig ? ' · ' + a.key_sig : '') + ' · ' + a.num_secciones + ' secciones';
+        const user = document.createElement('div'); user.className = 'ai-user'; user.textContent = 'por ' + a.username;
+        const votes = document.createElement('div'); votes.className = 'ai-votes'; votes.textContent = '▲ ' + (a.votos || 0) + ' votos';
+        item.appendChild(lbl); item.appendChild(meta); item.appendChild(user); item.appendChild(votes);
+        list.appendChild(item);
+      });
+    }
     document.getElementById('modalAnalisis').classList.add('show');
   } catch(e) { setStatus('error', e.message); }
 }
