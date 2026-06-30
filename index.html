@@ -1069,14 +1069,20 @@ function openTypePopup(i, anchor) {
   const rect = anchor.getBoundingClientRect();
   popup.style.left = rect.left + 'px';
   popup.style.top  = (rect.bottom + 4) + 'px';
-  popup.innerHTML = ALL_TYPES.map(t => {
+  popup.innerHTML = '';
+  ALL_TYPES.forEach(function(t) {
     const T = gt(t);
-    return '<div class="tp-opt" style="background:' + T.bg + ';border-color:' + T.accent + ';color:' + T.label + '" ' +
-      'onclick="setType(' + i + ','' + t + '');closeTypePopup()">' +
-      (TYPE_LABELS[t] || t.toUpperCase()) + '</div>';
-  }).join('');
+    const div = document.createElement('div');
+    div.className = 'tp-opt';
+    div.style.background = T.bg;
+    div.style.borderColor = T.accent;
+    div.style.color = T.label;
+    div.textContent = TYPE_LABELS[t] || t.toUpperCase();
+    div.addEventListener('click', function() { setType(i, t); closeTypePopup(); });
+    popup.appendChild(div);
+  });
   popup.classList.add('show');
-  setTimeout(() => document.addEventListener('click', closeTypePopup, { once: true }), 10);
+  setTimeout(function() { document.addEventListener('click', closeTypePopup, { once: true }); }, 10);
 }
 
 function setType(i, type) {
@@ -1204,8 +1210,14 @@ async function loadArtists() {
   try {
     const data = await apiFetch('/artistas', 'GET', null, false);
     const panel = document.getElementById('artistsPanel');
-    panel.innerHTML = '<div class="artist-item active" onclick="loadBib()"><div class="artist-name">Todos</div></div>' +
-      data.map(a => '<div class="artist-item" onclick="loadBib(\'' + a.artist.replace(/'/g,'') + '\')"><div class="artist-name">' + a.artist + '</div><div class="artist-count">' + a.canciones + ' canciones · ' + a.analisis + ' análisis</div></div>').join('');
+    panel.innerHTML = '<div class="artist-item active" onclick="loadBib()"><div class="artist-name">Todos</div></div>';
+  data.forEach(function(a) {
+    const div = document.createElement('div');
+    div.className = 'artist-item';
+    div.innerHTML = '<div class="artist-name">' + a.artist + '</div><div class="artist-count">' + a.canciones + ' canciones · ' + a.analisis + ' análisis</div>';
+    div.addEventListener('click', function() { loadBib(a.artist); });
+    panel.appendChild(div);
+  });
   } catch(e) { console.error(e); }
 }
 
