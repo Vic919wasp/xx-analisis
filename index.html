@@ -274,6 +274,9 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
   padding: 2px 6px; pointer-events: none; z-index: 30;
   transform: translateX(-50%); white-space: nowrap; display: none;
 }
+.tl-seg-new { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; border: 1.5px dashed rgba(184,150,46,.6); background: rgba(184,150,46,.08); pointer-events: none; }
+.timeline { overflow: visible !important; }
+.timeline-section { overflow: visible; position: relative; }
 
 /* SECTION CARDS — lista horizontal debajo del video */
 .sec-cards-wrap {
@@ -580,7 +583,8 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
       <!-- Input -->
       <div class="input-bar">
         <input type="text" class="url-input" id="ytUrl" placeholder="Pegá una URL de YouTube...">
-        <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()">ANALIZAR</button>
+        <button class="btn-analyze" id="btnLoadVideo" onclick="loadVideoOnly()">CARGAR VIDEO</button>
+        <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()" style="display:none;background:linear-gradient(135deg,var(--gold),var(--gold2))">♪ ANALIZAR ARMONÍA</button>
         <button class="btn-save" id="btnSave" onclick="openSaveModal()">GUARDAR</button>
       </div>
       <div class="status-bar" id="statusBar"></div>
@@ -610,15 +614,24 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
         <span class="sync-val" id="syncVal">0.0s</span>
       </div>
 
-      <!-- Timeline -->
-      <div class="timeline-section">
+      <!-- Track interactivo -->
+      <div class="timeline-section" id="trackSection">
         <div class="tl-header">
-          <span class="tl-title">MAPA DE SECCIONES — arrastrá los bordes para calibrar</span>
-          <span class="tl-hint" id="tlHint"></span>
+          <span class="tl-title" id="tlTitle">TRACK — hacé click para agregar una sección · arrastrá los bordes para ajustar</span>
+          <span style="display:flex;gap:6px;align-items:center">
+            <span class="tl-hint" id="tlHint"></span>
+            <button onclick="clearAllSections()" style="font-size:9px;color:var(--tx3);background:none;border:1px solid var(--border);border-radius:2px;padding:2px 6px;cursor:pointer;transition:all .15s" title="Limpiar todo">✕ LIMPIAR</button>
+          </span>
         </div>
-        <div class="timeline" id="timeline">
+        <div class="timeline" id="timeline" style="cursor:crosshair">
           <div class="tl-playhead" id="tlPlayhead" style="left:0%"></div>
           <div class="tl-tooltip" id="tlTooltip"></div>
+          <div id="tlEmpty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:11px;pointer-events:none;letter-spacing:.08em">CLICK PARA AGREGAR SECCIONES</div>
+        </div>
+        <!-- Botón analizar armonía flotante -->
+        <div id="analyzeBar" style="display:none;margin-top:.5rem;display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--tx3)" id="secCountTrack">0 secciones</span>
+          <button id="btnAnalyze2" onclick="startAnalysis()" style="padding:6px 16px;background:var(--gold);color:#000;border:none;border-radius:var(--r);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s">♪ ANALIZAR ARMONÍA</button>
         </div>
       </div>
 
@@ -792,7 +805,13 @@ function createPlayer(vid) {
     host: 'https://www.youtube-nocookie.com',
     playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1, enablejsapi: 1, origin: 'https://vic919wasp.github.io' },
     events: {
-      onReady: () => { document.getElementById('btnPlay').disabled = false; },
+      onReady: function(e) {
+        document.getElementById('btnPlay').disabled = false;
+        // Obtener duración real del video
+        const dur = e.target.getDuration();
+        if (dur > 0) TOTAL = dur;
+        setStatus('success', 'Video listo (' + fmt(dur) + ') — hacé click en el track para agregar secciones');
+      },
       onStateChange: e => {
         const btn = document.getElementById('btnPlay');
         if (e.data === YT.PlayerState.PLAYING) { startSync(); if (btn) btn.textContent = '⏸'; }
@@ -830,71 +849,156 @@ function seekTo(i) {
 }
 
 // [007] GEMINI / ANALIZAR
-async function startAnalysis() {
+// ============================================================
+// CARGAR VIDEO (sin análisis)
+// ============================================================
+function loadVideoOnly() {
   const url = document.getElementById('ytUrl').value.trim();
   if (!url) return setStatus('error', 'Ingresá una URL de YouTube.');
   const vid = extractId(url);
   if (!vid) return setStatus('error', 'URL inválida.');
   currentVideoId = vid;
+  TOTAL = 0; // se actualiza cuando el player cargue
+  SECTIONS = [];
+  disabledSections = new Set();
 
-  showOv(true, 'ANALIZANDO', 'Gemini identifica la canción y analiza su estructura harmónica...', 0, 'INICIANDO...');
+  // Mostrar el analyzer
+  document.getElementById('mainGrid').style.display = 'grid';
+  document.getElementById('trackSection').style.display = 'block';
+  document.getElementById('analyzeBar').style.display = 'none';
+  document.getElementById('tlEmpty').style.display = 'flex';
+  buildTL();
+  buildSecCards();
+
+  // Cargar YouTube player
+  if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
+  else window._pendingVid = vid;
+
+  setStatus('loading', 'Video cargando... Escuchá y hacé click en el track para agregar secciones.');
+}
+
+async function startAnalysis() {
+  if (!SECTIONS.length) return setStatus('error', 'Primero agregá secciones en el track.');
+  if (!currentVideoId)  return setStatus('error', 'Primero cargá un video.');
+
+  showOv(true, 'ANALIZANDO ARMONÍA', 'Gemini analiza cada sección con sus timestamps exactos...', 0, 'INICIANDO...');
   document.getElementById('btnAnalyze').disabled = true;
+  document.getElementById('btnAnalyze2') && (document.getElementById('btnAnalyze2').disabled = true);
+
+  // Construir descripción de secciones para el prompt
+  const secDesc = SECTIONS.map(function(s) {
+    return s.id + '. ' + s.name + ' (' + fmt(s.start) + ' - ' + fmt(s.end) + ')';
+  }).join('\n');
 
   const prompt = [
-    'Sos un experto en teoría musical. Analizá la canción del video YouTube ID: ' + vid,
-    'URL: ' + url,
+    'Sos un experto en teoría musical. Analizá la canción del video YouTube ID: ' + currentVideoId,
     '',
-    'PASO 1: Identificá artista y título exacto.',
-    'PASO 2: Analizá estructura real — acordes específicos, timestamps, modo, BPM, compás.',
-    'PASO 3: Respondé SOLO con JSON (sin markdown):',
-    '{"title":"...","artist":"...","album":"...","year":2000,"genre":"...","total_duration":300,"bpm":120,"key":"E minor","sections":[',
-    '{"id":"01","name":"Intro","type":"intro","start":0,"end":20,"time_signature":"4/4","key":"E minor","feel":"...","bpm":120,',
-    '"chords":[{"name":"Em7","function":"i7","beats":"2","type":"modal","note":"tónica"}],',
-    '"rhythm_pattern":[1,0,1,0,1,0,1,0],"rhythm_label":"4/4 negras",',
-    '"comment":"...","harmony":"...","rhythm_analysis":"...","color":"...","voicings":"..."}]}',
+    'El usuario definió manualmente estas secciones con sus tiempos exactos:',
+    secDesc,
+    '',
+    'Para CADA sección, analizá la armonía y ritmo que ocurre en esos tiempos específicos.',
+    'Usá tu conocimiento de la canción para determinar los acordes, modo, función tonal y métricas.',
+    '',
+    'Respondé SOLO con JSON (sin markdown):',
+    '{',
+    '  "title": "título exacto",',
+    '  "artist": "artista exacto",',
+    '  "album": "álbum",',
+    '  "year": 2000,',
+    '  "genre": "género",',
+    '  "total_duration": ' + Math.round(TOTAL) + ',',
+    '  "bpm": 120,',
+    '  "key": "tonalidad global",',
+    '  "sections": [',
+    '    {',
+    '      "id": "01",',
+    '      "name": "nombre dado por el usuario",',
+    '      "type": "chorus",',
+    '      "start": 0,',
+    '      "end": 30,',
+    '      "time_signature": "4/4",',
+    '      "key": "E minor",',
+    '      "feel": "oscuro/pesado",',
+    '      "bpm": 120,',
+    '      "chords": [{"name": "Em7", "function": "i7", "beats": "2", "type": "modal", "note": "tónica"}],',
+    '      "rhythm_pattern": [1,0,1,0,1,0,1,0],',
+    '      "rhythm_label": "4/4 negras",',
+    '      "comment": "descripción de 2 oraciones",',
+    '      "harmony": "análisis armónico detallado",',
+    '      "rhythm_analysis": "análisis rítmico",',
+    '      "color": "concepto/influencias",',
+    '      "voicings": "instrumentación/técnicas"',
+    '    }',
+    '  ]',
+    '}',
+    '',
+    'IMPORTANTE: respetá los nombres y timestamps que el usuario definió.',
     'chord type: modal/tension/resolve/jazz/bright/neutral',
     'section type: intro/riff/verse/chorus/bridge/solo/break/outro/instrumental/precoro',
-    'TODAS las secciones con repeticiones. Acordes ESPECÍFICOS de la canción. Textos max 150 chars.'
+    'Acordes ESPECÍFICOS de esta canción, no genéricos. Max 150 chars por campo de texto.'
   ].join('\n');
 
   try {
     setOvStep('CONSULTANDO GEMINI...', 30);
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + window.GEMINI_KEY;
     const res = await fetch(apiUrl, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 16384, responseMimeType: 'application/json' } })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 16384, responseMimeType: 'application/json' }
+      })
     });
     setOvStep('PROCESANDO RESPUESTA...', 65);
     if (!res.ok) { const e = await res.json(); throw new Error(e.error ? e.error.message : 'HTTP ' + res.status); }
     const data = await res.json();
-    const raw = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : '';
-    if (!raw) throw new Error('Sin respuesta de Gemini.');
+    const raw = data.candidates && data.candidates[0] && data.candidates[0].content &&
+                data.candidates[0].content.parts && data.candidates[0].content.parts[0] ?
+                data.candidates[0].content.parts[0].text : '';
+    if (!raw) throw new Error('Sin respuesta de Gemini. Intentá de nuevo.');
+    setOvStep('CONSTRUYENDO ANÁLISIS...', 85);
     const analysis = safeParseJson(raw);
-    if (!analysis.sections || !analysis.sections.length) throw new Error('Sin secciones. Intentá de nuevo.');
-    setOvStep('CONSTRUYENDO ANÁLISIS...', 90);
+    if (!analysis.sections || !analysis.sections.length) throw new Error('Sin secciones en la respuesta.');
+
+    // Preservar timestamps del usuario, solo tomar armonía de Gemini
+    analysis.sections.forEach(function(gemSec, i) {
+      if (SECTIONS[i]) {
+        gemSec.start = SECTIONS[i].start;
+        gemSec.end   = SECTIONS[i].end;
+        gemSec.name  = SECTIONS[i].name || gemSec.name;
+      }
+    });
+
     currentAnalysis = analysis;
-    loadAnalysis(analysis, vid);
+    SECTIONS = analysis.sections;
+    disabledSections = new Set();
+    TOTAL = analysis.total_duration || TOTAL;
+
+    buildTL();
+    buildSecCards();
+    renderSList();
+    renderDetail(0);
+    updateTransport(0, 0);
+    updatePlayhead(0);
+
+    document.getElementById('btnSave').classList.toggle('show', !!authToken);
+    document.getElementById('btnAnalyze').style.display = 'inline-block';
+    document.getElementById('btnLoadVideo').style.display = 'none';
+
     setOvStep('ANÁLISIS COMPLETO', 100);
-    setTimeout(() => showOv(false), 500);
+    setStatus('success', (analysis.artist || '') + ' — ' + (analysis.title || '') + ' · ' + SECTIONS.length + ' secciones analizadas');
+    setTimeout(function() { showOv(false); }, 500);
+
   } catch(err) {
     showOv(false);
     setStatus('error', err.message);
   } finally {
     document.getElementById('btnAnalyze').disabled = false;
+    const btn2 = document.getElementById('btnAnalyze2');
+    if (btn2) btn2.disabled = false;
   }
 }
 
-function loadAnalysis(data, vid) {
-  SECTIONS = data.sections;
-  disabledSections = new Set();
-  TOTAL = data.total_duration || SECTIONS[SECTIONS.length-1]?.end || 300;
-  currentSection = 0;
-  buildTL(); buildSecCards(); renderSList(); renderDetail(0); updateTransport(0, 0); updatePlayhead(0);
-  document.getElementById('btnSave').classList.toggle('show', !!authToken);
-  setStatus('success', (data.artist || '') + ' — ' + (data.title || '') + ' · ' + SECTIONS.length + ' secciones');
-  if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
-  else window._pendingVid = vid;
-}
 
 // SAVE
 function openSaveModal() {
@@ -1243,45 +1347,193 @@ function updatePlayhead(t) {
 function initTLDrag() {
   const tl = document.getElementById('timeline');
   let drag = null;
+  let creating = null; // {startPct, startSec}
 
+  function pctToSec(clientX) {
+    const rect = tl.getBoundingClientRect();
+    return Math.max(0, Math.min(TOTAL || 600, ((clientX - rect.left) / rect.width) * (TOTAL || 600)));
+  }
+  function pctFromSec(sec) {
+    return ((sec / (TOTAL || 600)) * 100) + '%';
+  }
+
+  // CLICK EN AREA VACÍA = crear nueva sección
   tl.addEventListener('mousedown', function(e) {
+    // Si es handle de resize, manejar resize
     const h = e.target.closest('[data-side]');
-    if (!h) return;
+    if (h) {
+      e.preventDefault();
+      const i = parseInt(h.dataset.i);
+      drag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end };
+      const seg = document.getElementById('tls' + i);
+      if (seg) seg.classList.add('dragging');
+      return;
+    }
+
+    // Si click en segmento existente, saltar a esa sección
+    const seg = e.target.closest('.tl-seg');
+    if (seg) return;
+
+    // Si no hay video cargado, ignorar
+    if (!currentVideoId) return;
+
+    // CREAR nueva sección
     e.preventDefault();
-    const i = parseInt(h.dataset.i);
-    drag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end };
-    document.getElementById('tls' + i).classList.add('dragging');
+    const startSec = pctToSec(e.clientX);
+
+    // Preview visual
+    const preview = document.createElement('div');
+    preview.className = 'tl-seg-new';
+    preview.id = 'tlPreview';
+    const rect = tl.getBoundingClientRect();
+    const startPct = ((startSec / (TOTAL || 600)) * 100);
+    preview.style.left = startPct + '%';
+    preview.style.width = '0%';
+    tl.appendChild(preview);
+
+    creating = { startSec, startPct, el: preview };
+    document.getElementById('tlEmpty').style.display = 'none';
   });
 
   document.addEventListener('mousemove', function(e) {
-    if (!drag) return;
-    const rect = tl.getBoundingClientRect();
-    const dt = ((e.clientX - drag.x0) / rect.width) * TOTAL;
-    const tt = document.getElementById('tlTooltip');
-    const i = drag.i;
-    if (drag.side === 'l') {
-      SECTIONS[i].start = Math.max(0, Math.min(drag.s0 + dt, SECTIONS[i].end - 1));
-      if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
-      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].start/TOTAL)*100) + '%'; tt.textContent = fmt(SECTIONS[i].start); }
-    } else {
-      SECTIONS[i].end = Math.min(TOTAL, Math.max(drag.e0 + dt, SECTIONS[i].start + 1));
-      if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
-      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].end/TOTAL)*100) + '%'; tt.textContent = fmt(SECTIONS[i].end); }
+    // Resize existing
+    if (drag) {
+      const rect = tl.getBoundingClientRect();
+      const dt = ((e.clientX - drag.x0) / rect.width) * (TOTAL || 600);
+      const tt = document.getElementById('tlTooltip');
+      const i = drag.i;
+      if (drag.side === 'l') {
+        SECTIONS[i].start = Math.max(0, Math.min(drag.s0 + dt, SECTIONS[i].end - 1));
+        if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
+        if (tt) { tt.style.display = 'block'; tt.style.left = pctFromSec(SECTIONS[i].start); tt.textContent = fmt(SECTIONS[i].start); }
+      } else {
+        SECTIONS[i].end = Math.min(TOTAL || 600, Math.max(drag.e0 + dt, SECTIONS[i].start + 1));
+        if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
+        if (tt) { tt.style.display = 'block'; tt.style.left = pctFromSec(SECTIONS[i].end); tt.textContent = fmt(SECTIONS[i].end); }
+      }
+      refreshSeg(i);
+      if (drag.side === 'l' && i > 0) refreshSeg(i-1);
+      if (drag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
+      return;
     }
-    refreshSeg(i);
-    if (drag.side === 'l' && i > 0) refreshSeg(i-1);
-    if (drag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
+
+    // Preview nueva sección
+    if (creating) {
+      const endSec = pctToSec(e.clientX);
+      const rect = tl.getBoundingClientRect();
+      const minSec = Math.min(creating.startSec, endSec);
+      const maxSec = Math.max(creating.startSec, endSec);
+      const leftPct = (minSec / (TOTAL || 600)) * 100;
+      const widthPct = ((maxSec - minSec) / (TOTAL || 600)) * 100;
+      creating.el.style.left = leftPct + '%';
+      creating.el.style.width = widthPct + '%';
+      creating.minSec = minSec;
+      creating.maxSec = maxSec;
+
+      const tt = document.getElementById('tlTooltip');
+      if (tt) { tt.style.display = 'block'; tt.style.left = (leftPct + widthPct/2) + '%'; tt.textContent = fmt(minSec) + ' – ' + fmt(maxSec); }
+    }
   });
 
-  document.addEventListener('mouseup', function() {
-    if (!drag) return;
-    document.getElementById('tls' + drag.i).classList.remove('dragging');
-    const tt = document.getElementById('tlTooltip');
-    if (tt) tt.style.display = 'none';
-    renderSList();
-    drag = null;
+  document.addEventListener('mouseup', function(e) {
+    // Fin de resize
+    if (drag) {
+      const seg = document.getElementById('tls' + drag.i);
+      if (seg) seg.classList.remove('dragging');
+      const tt = document.getElementById('tlTooltip');
+      if (tt) tt.style.display = 'none';
+      renderSList();
+      buildSecCards();
+      updateAnalyzeBar();
+      drag = null;
+      return;
+    }
+
+    // Fin de creación
+    if (creating) {
+      const tt = document.getElementById('tlTooltip');
+      if (tt) tt.style.display = 'none';
+      creating.el.remove();
+      const dur = (creating.maxSec || 0) - (creating.minSec || creating.startSec);
+      if (dur > 0.5) {
+        // Pedir nombre al usuario
+        const name = prompt('Nombre de la sección:', sugerirNombre());
+        if (name && name.trim()) {
+          addSectionManual(creating.minSec, creating.maxSec, name.trim());
+        } else if (name !== null) {
+          addSectionManual(creating.minSec, creating.maxSec, sugerirNombre());
+        }
+      }
+      creating = null;
+    }
   });
 }
+
+function sugerirNombre() {
+  const tipos = ['Intro', 'Verso 1', 'Pre-Coro', 'Coro', 'Verso 2', 'Puente', 'Solo', 'Outro'];
+  return tipos[SECTIONS.length] || 'Sección ' + (SECTIONS.length + 1);
+}
+
+function addSectionManual(start, end, name) {
+  const id = String(SECTIONS.length + 1).padStart(2, '0');
+  // Ordenar por start
+  const newSec = {
+    id: id, name: name, type: guessType(name),
+    start: start, end: end,
+    time_signature: '4/4', bpm: null, key: null,
+    chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
+    feel: '', harmony: '', rhythm_analysis: '', color: '', voicings: '', comment: ''
+  };
+  SECTIONS.push(newSec);
+  SECTIONS.sort(function(a,b) { return a.start - b.start; });
+  SECTIONS.forEach(function(s,i) { s.id = String(i+1).padStart(2,'0'); });
+  buildTL();
+  buildSecCards();
+  renderSList();
+  updateAnalyzeBar();
+}
+
+function guessType(name) {
+  const n = name.toLowerCase();
+  if (n.includes('intro'))  return 'intro';
+  if (n.includes('coro') || n.includes('chorus')) return 'chorus';
+  if (n.includes('pre'))    return 'pre-coro';
+  if (n.includes('verso') || n.includes('verse')) return 'verse';
+  if (n.includes('puente') || n.includes('bridge')) return 'bridge';
+  if (n.includes('solo'))   return 'solo';
+  if (n.includes('outro'))  return 'outro';
+  if (n.includes('riff'))   return 'riff';
+  if (n.includes('instr'))  return 'instrumental';
+  return 'verse';
+}
+
+function updateAnalyzeBar() {
+  const bar = document.getElementById('analyzeBar');
+  const cnt = document.getElementById('secCountTrack');
+  if (bar) bar.style.display = SECTIONS.length ? 'flex' : 'none';
+  if (cnt) cnt.textContent = SECTIONS.length + ' secci' + (SECTIONS.length === 1 ? 'ón' : 'ones');
+  const btnA = document.getElementById('btnAnalyze');
+  if (btnA) btnA.style.display = SECTIONS.length ? 'inline-block' : 'none';
+  const btnL = document.getElementById('btnLoadVideo');
+  if (btnL) btnL.style.display = SECTIONS.length ? 'none' : 'inline-block';
+  if (SECTIONS.length === 0) {
+    const empty = document.getElementById('tlEmpty');
+    if (empty) empty.style.display = 'flex';
+  }
+}
+
+function clearAllSections() {
+  if (SECTIONS.length && !confirm('Borrar todas las secciones?')) return;
+  SECTIONS = [];
+  disabledSections = new Set();
+  buildTL();
+  buildSecCards();
+  renderSList();
+  updateAnalyzeBar();
+  const empty = document.getElementById('tlEmpty');
+  if (empty) empty.style.display = 'flex';
+}
+
 
 function refreshSeg(i) {
   const seg = document.getElementById('tls' + i);
