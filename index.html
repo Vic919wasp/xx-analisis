@@ -858,15 +858,23 @@ function loadVideoOnly() {
   const vid = extractId(url);
   if (!vid) return setStatus('error', 'URL inválida.');
   currentVideoId = vid;
-  TOTAL = 0; // se actualiza cuando el player cargue
+  TOTAL = 0;
   SECTIONS = [];
   disabledSections = new Set();
 
-  // Mostrar el analyzer
-  document.getElementById('mainGrid').style.display = 'grid';
-  document.getElementById('trackSection').style.display = 'block';
-  document.getElementById('analyzeBar').style.display = 'none';
-  document.getElementById('tlEmpty').style.display = 'flex';
+  // Mostrar la vista del analyzer
+  showView('analyzer');
+
+  // Mostrar la sección de análisis principal
+  const mc = document.querySelector('.main-content');
+  if (mc) mc.style.display = 'grid';
+
+  // Reset track
+  const tlEmpty = document.getElementById('tlEmpty');
+  if (tlEmpty) tlEmpty.style.display = 'flex';
+  const analyzeBar = document.getElementById('analyzeBar');
+  if (analyzeBar) analyzeBar.style.display = 'none';
+
   buildTL();
   buildSecCards();
 
@@ -874,7 +882,7 @@ function loadVideoOnly() {
   if (typeof YT !== 'undefined' && YT.Player) createPlayer(vid);
   else window._pendingVid = vid;
 
-  setStatus('loading', 'Video cargando... Escuchá y hacé click en el track para agregar secciones.');
+  setStatus('loading', 'Video cargando... hacé click en el track para agregar secciones.');
 }
 
 async function startAnalysis() {
