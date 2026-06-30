@@ -957,31 +957,75 @@ function buildSecCards() {
   const container = document.getElementById('secCards');
   if (!SECTIONS.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
+  container.innerHTML = '';
 
-  container.innerHTML = SECTIONS.map((s, i) => {
+  SECTIONS.forEach(function(s, i) {
     const T = gt(s.type);
     const disabled = disabledSections.has(i);
-    return '<div class="sec-card' + (disabled ? ' disabled-card' : '') + '" id="scard' + i + '" ' +
-      'draggable="true" ' +
-      'ondragstart="cardDragStart(event,' + i + ')" ' +
-      'ondragover="cardDragOver(event,' + i + ')" ' +
-      'ondrop="cardDrop(event,' + i + ')" ' +
-      'ondragend="cardDragEnd()" ' +
-      'onclick="seekTo(' + i + ')" ' +
-      'style="background:' + T.bg + ';border-color:' + T.accent + '66">' +
-      '<div class="sc-type" style="color:' + T.label + ';cursor:pointer" onclick="event.stopPropagation();openTypePopup(' + i + ',this)">' +
-        (TYPE_LABELS[s.type?.toLowerCase()] || (s.type || 'TIPO').toUpperCase()) + ' ▾' +
-      '</div>' +
-      '<div class="sc-name">' + s.name + '</div>' +
-      '<div class="sc-time">' + fmt(s.start) + ' – ' + fmt(s.end) + '</div>' +
-      '<div class="sc-actions">' +
-        '<button class="sc-btn toggle-btn' + (disabled ? ' off' : '') + '" onclick="event.stopPropagation();toggleSection(' + i + ')" title="' + (disabled ? 'Activar' : 'Desactivar') + '">' +
-          (disabled ? '✗' : '✓') + '</button>' +
-        '<button class="sc-btn" onclick="event.stopPropagation();editSectionName(' + i + ')" title="Editar nombre">✎</button>' +
-        '<button class="sc-btn delete" onclick="event.stopPropagation();deleteSection(' + i + ')" title="Eliminar">✕</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+    const card = document.createElement('div');
+    card.className = 'sec-card' + (disabled ? ' disabled-card' : '');
+    card.id = 'scard' + i;
+    card.draggable = true;
+    card.style.background = T.bg;
+    card.style.borderColor = T.accent + '66';
+
+    // Type label
+    const typeDiv = document.createElement('div');
+    typeDiv.className = 'sc-type';
+    typeDiv.style.color = T.label;
+    typeDiv.style.cursor = 'pointer';
+    typeDiv.textContent = (TYPE_LABELS[s.type ? s.type.toLowerCase() : ''] || (s.type || 'TIPO').toUpperCase()) + ' ▾';
+    typeDiv.addEventListener('click', function(e) { e.stopPropagation(); openTypePopup(i, typeDiv); });
+
+    // Name
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'sc-name';
+    nameDiv.textContent = s.name;
+
+    // Time
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'sc-time';
+    timeDiv.textContent = fmt(s.start) + ' – ' + fmt(s.end);
+
+    // Actions
+    const actDiv = document.createElement('div');
+    actDiv.className = 'sc-actions';
+
+    const btnToggle = document.createElement('button');
+    btnToggle.className = 'sc-btn toggle-btn' + (disabled ? ' off' : '');
+    btnToggle.textContent = disabled ? '✗' : '✓';
+    btnToggle.title = disabled ? 'Activar' : 'Desactivar';
+    btnToggle.addEventListener('click', function(e) { e.stopPropagation(); toggleSection(i); });
+
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'sc-btn';
+    btnEdit.textContent = '✎';
+    btnEdit.title = 'Editar nombre';
+    btnEdit.addEventListener('click', function(e) { e.stopPropagation(); editSectionName(i); });
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'sc-btn delete';
+    btnDel.textContent = '×';
+    btnDel.title = 'Eliminar';
+    btnDel.addEventListener('click', function(e) { e.stopPropagation(); deleteSection(i); });
+
+    actDiv.appendChild(btnToggle);
+    actDiv.appendChild(btnEdit);
+    actDiv.appendChild(btnDel);
+    card.appendChild(typeDiv);
+    card.appendChild(nameDiv);
+    card.appendChild(timeDiv);
+    card.appendChild(actDiv);
+
+    // Drag events
+    card.addEventListener('dragstart', function(e) { cardDragStart(e, i); });
+    card.addEventListener('dragover',  function(e) { cardDragOver(e, i); });
+    card.addEventListener('drop',      function(e) { cardDrop(e, i); });
+    card.addEventListener('dragend',   cardDragEnd);
+    card.addEventListener('click',     function() { seekTo(i); });
+
+    container.appendChild(card);
+  });
 }
 
 function cardDragStart(e, i) {
@@ -1332,22 +1376,58 @@ function toggleSection(i) {
 }
 
 function renderSList() {
-  const active = SECTIONS.filter((_, i) => !disabledSections.has(i)).length;
-  document.getElementById('secCount').textContent = active + ' activas / ' + SECTIONS.length;
-  document.getElementById('slist').innerHTML = SECTIONS.map((s, i) => {
+  const activeCount = SECTIONS.filter(function(_, i) { return !disabledSections.has(i); }).length;
+  document.getElementById('secCount').textContent = activeCount + ' activas / ' + SECTIONS.length;
+  const slist = document.getElementById('slist');
+  slist.innerHTML = '';
+
+  SECTIONS.forEach(function(s, i) {
     const disabled = disabledSections.has(i);
     const isCurrent = i === currentSection;
     const accent = glbl(s.type);
-    return '<div class="sl-item' + (isCurrent && !disabled ? ' active' : '') + (disabled ? ' disabled' : '') + '" ' +
-      'style="border-left-color:' + (isCurrent && !disabled ? accent : 'transparent') + ';position:relative">' +
-      '<span class="sl-num">' + s.id + '</span>' +
-      '<div class="sl-dot" style="background:' + (disabled ? '#2a2a2a' : accent) + ';box-shadow:' + (disabled ? 'none' : '0 0 6px ' + accent + '88') + '"></div>' +
-      '<span class="sl-name" style="color:' + (disabled ? 'var(--tx3)' : 'var(--tx)') + '">' + s.name + '</span>' +
-      '<span style="font-size:9px;color:var(--tx3);font-family:var(--fm);letter-spacing:.04em;margin-right:6px">' + (s.time_signature || '4/4') + '</span>' +
-      '<span class="sl-time">' + fmt(s.start) + '</span>' +
-      '<button onclick="event.stopPropagation();toggleSection(' + i + ')" style="margin-left:6px;background:none;border:1px solid ' + (disabled ? '#3a3a3a' : accent + '66') + ';border-radius:3px;color:' + (disabled ? '#3a3a3a' : accent) + ';cursor:pointer;font-size:9px;padding:1px 5px;transition:all .15s" title="' + (disabled ? 'Activar' : 'Desactivar') + '">' + (disabled ? '✗' : '✓') + '</button>' +
-      '</div>';
-  }).join('');
+
+    const item = document.createElement('div');
+    item.className = 'sl-item' + (isCurrent && !disabled ? ' active' : '') + (disabled ? ' disabled' : '');
+    if (isCurrent && !disabled) item.style.borderLeftColor = accent;
+
+    const num = document.createElement('span');
+    num.className = 'sl-num';
+    num.textContent = s.id;
+
+    const dot = document.createElement('div');
+    dot.className = 'sl-dot';
+    dot.style.background = disabled ? '#2a2a2a' : accent;
+    dot.style.boxShadow = disabled ? 'none' : '0 0 6px ' + accent + '88';
+
+    const name = document.createElement('span');
+    name.className = 'sl-name';
+    name.style.color = disabled ? 'var(--tx3)' : 'var(--tx)';
+    name.textContent = s.name;
+
+    const meter = document.createElement('span');
+    meter.style.cssText = 'font-size:9px;color:var(--tx3);font-family:var(--fm);letter-spacing:.04em;margin-right:6px';
+    meter.textContent = s.time_signature || '4/4';
+
+    const time = document.createElement('span');
+    time.className = 'sl-time';
+    time.textContent = fmt(s.start);
+
+    const btnTog = document.createElement('button');
+    btnTog.style.cssText = 'margin-left:6px;background:none;border:1px solid ' + (disabled ? '#3a3a3a' : accent + '66') + ';border-radius:3px;color:' + (disabled ? '#3a3a3a' : accent) + ';cursor:pointer;font-size:9px;padding:1px 5px;transition:all .15s';
+    btnTog.textContent = disabled ? '✗' : '✓';
+    btnTog.title = disabled ? 'Activar' : 'Desactivar';
+    btnTog.addEventListener('click', function(e) { e.stopPropagation(); toggleSection(i); });
+
+    item.appendChild(num);
+    item.appendChild(dot);
+    item.appendChild(name);
+    item.appendChild(meter);
+    item.appendChild(time);
+    item.appendChild(btnTog);
+    item.addEventListener('click', function() { seekTo(i); });
+    slist.appendChild(item);
+  });
+
   const activeEl = document.querySelector('.sl-item.active');
   if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
