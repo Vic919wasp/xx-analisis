@@ -869,10 +869,7 @@ async function startAnalysis() {
     const data = await res.json();
     const raw = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : '';
     if (!raw) throw new Error('Sin respuesta de Gemini.');
-    let clean = raw.replace(/```json|```/g, '').trim();
-    let analysis;
-    try { analysis = JSON.parse(clean); }
-    catch(e) { clean = repairJson(clean); analysis = JSON.parse(clean); }
+    const analysis = safeParseJson(raw);
     if (!analysis.sections || !analysis.sections.length) throw new Error('Sin secciones. Intentá de nuevo.');
     setOvStep('CONSTRUYENDO ANÁLISIS...', 90);
     currentAnalysis = analysis;
@@ -937,11 +934,62 @@ async function confirmSave() {
 }
 
 function repairJson(s) {
+  // Limpiar caracteres de control que rompen JSON
+  s = s.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, ' ');
+  // Eliminar comas finales antes de } o ]
   s = s.replace(/,\s*([}\]])/g, '$1');
-  let o = s.split('').reduce((a,c) => c==='{' ? a+1 : c==='}' ? a-1 : a, 0);
-  let r = s.split('').reduce((a,c) => c==='[' ? a+1 : c===']' ? a-1 : a, 0);
-  if (o > 0 || r > 0) { const l = s.lastIndexOf('},'); if (l > 0) { s = s.slice(0, l+1); o = s.split('').reduce((a,c) => c==='{' ? a+1 : c==='}' ? a-1 : a, 0); r = s.split('').reduce((a,c) => c==='[' ? a+1 : c===']' ? a-1 : a, 0); } s += ']'.repeat(Math.max(0,r)) + '}'.repeat(Math.max(0,o)); }
+  // Escapar saltos de línea dentro de strings
+  s = s.replace(/"([^"]*?)"/g, function(m, inner) {
+    return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t') + '"';
+  });
+  // Cerrar estructuras abiertas
+  let o = 0, r = 0;
+  let inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (c === '"' && !esc) { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') o++; else if (c === '}') o--;
+    if (c === '[') r++; else if (c === ']') r--;
+  }
+  if (o > 0 || r > 0) {
+    const lastGood = s.lastIndexOf('},');
+    if (lastGood > 0) {
+      s = s.slice(0, lastGood + 1);
+      o = 0; r = 0;
+      inStr = false; esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (esc) { esc = false; continue; }
+        if (c === '\\') { esc = true; continue; }
+        if (c === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (c === '{') o++; else if (c === '}') o--;
+        if (c === '[') r++; else if (c === ']') r--;
+      }
+    }
+    s += ']'.repeat(Math.max(0, r)) + '}'.repeat(Math.max(0, o));
+  }
   return s;
+}
+
+function safeParseJson(raw) {
+  // Intento 1: directo
+  try { return JSON.parse(raw); } catch(e1) {}
+  // Intento 2: limpiar markdown
+  let clean = raw.replace(/```json|```/g, '').trim();
+  try { return JSON.parse(clean); } catch(e2) {}
+  // Intento 3: reparar
+  try { return JSON.parse(repairJson(clean)); } catch(e3) {}
+  // Intento 4: extraer solo el JSON del texto
+  const match = clean.match(/\{[\s\S]*\}/);
+  if (match) {
+    try { return JSON.parse(match[0]); } catch(e4) {}
+    try { return JSON.parse(repairJson(match[0])); } catch(e5) {}
+  }
+  throw new Error('No se pudo parsear la respuesta de Gemini. Intentá de nuevo.');
 }
 
 // ============================================================
