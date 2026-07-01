@@ -1,6 +1,6 @@
 <!-- ============================================================
-     XX Analysis v2 — Estética Dream Theater 
-     Video + Timeline editable + Base de datos compartida 
+     XX Analysis v2 — Estética Dream Theater
+     Video + Timeline editable + Base de datos compartida
      ============================================================
      ÍNDICE DE NAVEGACIÓN
      [001] HEAD / META          - línea 14
@@ -604,6 +604,11 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
       <!-- Transport -->
       <div class="transport">
         <button class="btn-play" id="btnPlay" onclick="togglePlay()" disabled>▶</button>
+        <button id="btnMark" onclick="markNow()" disabled
+          style="padding:6px 14px;background:transparent;border:1.5px solid var(--gold);border-radius:var(--r);color:var(--gold);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s;white-space:nowrap"
+          title="Marcar inicio de sección en el tiempo actual (M)">
+          ● MARCAR
+        </button>
         <div>
           <div class="now-section" id="nowSection">— ESPERANDO ANÁLISIS —</div>
           <div class="now-meta" id="nowMeta">—</div>
@@ -807,10 +812,10 @@ function createPlayer(vid) {
     events: {
       onReady: function(e) {
         document.getElementById('btnPlay').disabled = false;
-        // Obtener duración real del video
+        document.getElementById('btnMark').disabled = false;
         const dur = e.target.getDuration();
         if (dur > 0) TOTAL = dur;
-        setStatus('success', 'Video listo (' + fmt(dur) + ') — hacé click en el track para agregar secciones');
+        setStatus('success', 'Video listo (' + fmt(dur) + ') — dale play y presioná MARCAR al inicio de cada sección');
       },
       onStateChange: e => {
         const btn = document.getElementById('btnPlay');
@@ -1355,150 +1360,111 @@ function updatePlayhead(t) {
 function initTLDrag() {
   const tl = document.getElementById('timeline');
   let drag = null;
-  let creating = null; // {startPct, startSec}
 
-  function pctToSec(clientX) {
-    const rect = tl.getBoundingClientRect();
-    return Math.max(0, Math.min(TOTAL || 600, ((clientX - rect.left) / rect.width) * (TOTAL || 600)));
-  }
-  function pctFromSec(sec) {
-    return ((sec / (TOTAL || 600)) * 100) + '%';
-  }
-
-  // CLICK EN AREA VACÍA = crear nueva sección
+  // Solo manejar RESIZE de secciones existentes
   tl.addEventListener('mousedown', function(e) {
-    // Si es handle de resize, manejar resize
     const h = e.target.closest('[data-side]');
-    if (h) {
-      e.preventDefault();
-      const i = parseInt(h.dataset.i);
-      drag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end };
-      const seg = document.getElementById('tls' + i);
-      if (seg) seg.classList.add('dragging');
-      return;
-    }
-
-    // Si click en segmento existente, saltar a esa sección
-    const seg = e.target.closest('.tl-seg');
-    if (seg) return;
-
-    // Si no hay video cargado, ignorar
-    if (!currentVideoId) return;
-
-    // CREAR nueva sección
+    if (!h) return;
     e.preventDefault();
-    const startSec = pctToSec(e.clientX);
-
-    // Preview visual
-    const preview = document.createElement('div');
-    preview.className = 'tl-seg-new';
-    preview.id = 'tlPreview';
-    const rect = tl.getBoundingClientRect();
-    const startPct = ((startSec / (TOTAL || 600)) * 100);
-    preview.style.left = startPct + '%';
-    preview.style.width = '0%';
-    tl.appendChild(preview);
-
-    creating = { startSec, startPct, el: preview };
-    document.getElementById('tlEmpty').style.display = 'none';
+    const i = parseInt(h.dataset.i);
+    drag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end };
+    const seg = document.getElementById('tls' + i);
+    if (seg) seg.classList.add('dragging');
   });
 
   document.addEventListener('mousemove', function(e) {
-    // Resize existing
-    if (drag) {
-      const rect = tl.getBoundingClientRect();
-      const dt = ((e.clientX - drag.x0) / rect.width) * (TOTAL || 600);
-      const tt = document.getElementById('tlTooltip');
-      const i = drag.i;
-      if (drag.side === 'l') {
-        SECTIONS[i].start = Math.max(0, Math.min(drag.s0 + dt, SECTIONS[i].end - 1));
-        if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
-        if (tt) { tt.style.display = 'block'; tt.style.left = pctFromSec(SECTIONS[i].start); tt.textContent = fmt(SECTIONS[i].start); }
-      } else {
-        SECTIONS[i].end = Math.min(TOTAL || 600, Math.max(drag.e0 + dt, SECTIONS[i].start + 1));
-        if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
-        if (tt) { tt.style.display = 'block'; tt.style.left = pctFromSec(SECTIONS[i].end); tt.textContent = fmt(SECTIONS[i].end); }
-      }
-      refreshSeg(i);
-      if (drag.side === 'l' && i > 0) refreshSeg(i-1);
-      if (drag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
-      return;
+    if (!drag) return;
+    const rect = tl.getBoundingClientRect();
+    const dt = ((e.clientX - drag.x0) / rect.width) * (TOTAL || 600);
+    const tt = document.getElementById('tlTooltip');
+    const i = drag.i;
+    if (drag.side === 'l') {
+      SECTIONS[i].start = Math.max(0, Math.min(drag.s0 + dt, SECTIONS[i].end - 2));
+      if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
+      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].start/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].start); }
+    } else {
+      SECTIONS[i].end = Math.min(TOTAL || 600, Math.max(drag.e0 + dt, SECTIONS[i].start + 2));
+      if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
+      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].end/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].end); }
     }
-
-    // Preview nueva sección
-    if (creating) {
-      const endSec = pctToSec(e.clientX);
-      const rect = tl.getBoundingClientRect();
-      const minSec = Math.min(creating.startSec, endSec);
-      const maxSec = Math.max(creating.startSec, endSec);
-      const leftPct = (minSec / (TOTAL || 600)) * 100;
-      const widthPct = ((maxSec - minSec) / (TOTAL || 600)) * 100;
-      creating.el.style.left = leftPct + '%';
-      creating.el.style.width = widthPct + '%';
-      creating.minSec = minSec;
-      creating.maxSec = maxSec;
-
-      const tt = document.getElementById('tlTooltip');
-      if (tt) { tt.style.display = 'block'; tt.style.left = (leftPct + widthPct/2) + '%'; tt.textContent = fmt(minSec) + ' – ' + fmt(maxSec); }
-    }
+    refreshSeg(i);
+    if (drag.side === 'l' && i > 0) refreshSeg(i-1);
+    if (drag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
   });
 
-  document.addEventListener('mouseup', function(e) {
-    // Fin de resize
-    if (drag) {
-      const seg = document.getElementById('tls' + drag.i);
-      if (seg) seg.classList.remove('dragging');
-      const tt = document.getElementById('tlTooltip');
-      if (tt) tt.style.display = 'none';
-      renderSList();
-      buildSecCards();
-      updateAnalyzeBar();
-      drag = null;
-      return;
-    }
-
-    // Fin de creación
-    if (creating) {
-      const tt = document.getElementById('tlTooltip');
-      if (tt) tt.style.display = 'none';
-      creating.el.remove();
-      const dur = (creating.maxSec || 0) - (creating.minSec || creating.startSec);
-      if (dur > 0.5) {
-        // Pedir nombre al usuario
-        const name = prompt('Nombre de la sección:', sugerirNombre());
-        if (name && name.trim()) {
-          addSectionManual(creating.minSec, creating.maxSec, name.trim());
-        } else if (name !== null) {
-          addSectionManual(creating.minSec, creating.maxSec, sugerirNombre());
-        }
-      }
-      creating = null;
-    }
+  document.addEventListener('mouseup', function() {
+    if (!drag) return;
+    const seg = document.getElementById('tls' + drag.i);
+    if (seg) seg.classList.remove('dragging');
+    const tt = document.getElementById('tlTooltip');
+    if (tt) tt.style.display = 'none';
+    renderSList();
+    buildSecCards();
+    updateAnalyzeBar();
+    drag = null;
   });
 }
 
-function sugerirNombre() {
-  const tipos = ['Intro', 'Verso 1', 'Pre-Coro', 'Coro', 'Verso 2', 'Puente', 'Solo', 'Outro'];
-  return tipos[SECTIONS.length] || 'Sección ' + (SECTIONS.length + 1);
-}
+// ============================================================
+// MARK — marca inicio de sección en el tiempo actual
+// ============================================================
+let lastMarkTime = null;
 
-function addSectionManual(start, end, name) {
-  const id = String(SECTIONS.length + 1).padStart(2, '0');
-  // Ordenar por start
-  const newSec = {
-    id: id, name: name, type: guessType(name),
-    start: start, end: end,
-    time_signature: '4/4', bpm: null, key: null,
-    chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
-    feel: '', harmony: '', rhythm_analysis: '', color: '', voicings: '', comment: ''
-  };
-  SECTIONS.push(newSec);
-  SECTIONS.sort(function(a,b) { return a.start - b.start; });
-  SECTIONS.forEach(function(s,i) { s.id = String(i+1).padStart(2,'0'); });
+function markNow() {
+  if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+  const t = Math.max(0, ytPlayer.getCurrentTime() + offsetSecs);
+  const T = TOTAL || 600;
+
+  if (SECTIONS.length === 0) {
+    // Primera sección empieza en 0
+    SECTIONS.push({
+      id: '01', name: 'Intro', type: 'intro',
+      start: 0, end: t > 0 ? t : T,
+      time_signature: '4/4', bpm: null, key: null,
+      chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
+      feel: '', harmony: '', rhythm_analysis: '', color: '', voicings: '', comment: ''
+    });
+    lastMarkTime = t;
+  } else {
+    // Cerrar la última sección en t
+    const last = SECTIONS[SECTIONS.length - 1];
+    last.end = t;
+    // Nueva sección empieza en t
+    const id = String(SECTIONS.length + 1).padStart(2, '0');
+    SECTIONS.push({
+      id: id, name: suggestName(),
+      type: guessType(suggestName()),
+      start: t, end: T,
+      time_signature: '4/4', bpm: null, key: null,
+      chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
+      feel: '', harmony: '', rhythm_analysis: '', color: '', voicings: '', comment: ''
+    });
+    lastMarkTime = t;
+  }
+
+  // Flash visual del botón
+  const btn = document.getElementById('btnMark');
+  if (btn) {
+    btn.style.background = 'var(--gold)';
+    btn.style.color = '#000';
+    setTimeout(function() {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--gold)';
+    }, 200);
+  }
+
   buildTL();
   buildSecCards();
   renderSList();
   updateAnalyzeBar();
+
+  const empty = document.getElementById('tlEmpty');
+  if (empty) empty.style.display = 'none';
+}
+
+function suggestName() {
+  const names = ['Intro','Verso 1','Pre-Coro','Coro 1','Verso 2','Pre-Coro 2','Coro 2','Puente','Solo','Coro final','Outro'];
+  return names[SECTIONS.length] || 'Sección ' + (SECTIONS.length + 1);
 }
 
 function guessType(name) {
@@ -1524,7 +1490,7 @@ function updateAnalyzeBar() {
   if (btnA) btnA.style.display = SECTIONS.length ? 'inline-block' : 'none';
   const btnL = document.getElementById('btnLoadVideo');
   if (btnL) btnL.style.display = SECTIONS.length ? 'none' : 'inline-block';
-  if (SECTIONS.length === 0) {
+  if (!SECTIONS.length) {
     const empty = document.getElementById('tlEmpty');
     if (empty) empty.style.display = 'flex';
   }
@@ -1532,12 +1498,8 @@ function updateAnalyzeBar() {
 
 function clearAllSections() {
   if (SECTIONS.length && !confirm('Borrar todas las secciones?')) return;
-  SECTIONS = [];
-  disabledSections = new Set();
-  buildTL();
-  buildSecCards();
-  renderSList();
-  updateAnalyzeBar();
+  SECTIONS = []; disabledSections = new Set(); lastMarkTime = null;
+  buildTL(); buildSecCards(); renderSList(); updateAnalyzeBar();
   const empty = document.getElementById('tlEmpty');
   if (empty) empty.style.display = 'flex';
 }
@@ -1828,7 +1790,14 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 
 // [011] INICIALIZACIÓN
 updateAuthUI();
-document.getElementById('ytUrl').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalysis(); });
+document.getElementById('ytUrl').addEventListener('keydown', function(e) { if (e.key === 'Enter') loadVideoOnly(); });
+
+// Atajo M = MARCAR sección
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'm' || e.key === 'M') {
+    if (document.activeElement.tagName !== 'INPUT') markNow();
+  }
+});
 
 // Si ya tiene token, ir directo al analyzer
 if (authToken && authUser) showView('analyzer');
