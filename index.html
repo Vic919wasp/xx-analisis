@@ -1266,8 +1266,10 @@ function addSection() {
 
 function editSectionName(i) {
   const newName = prompt('Nombre de la sección:', SECTIONS[i].name);
-  if (newName && newName.trim()) {
+  if (newName !== null && newName.trim()) {
     SECTIONS[i].name = newName.trim();
+    // Auto-detectar tipo por el nuevo nombre y actualizar color
+    SECTIONS[i].type = guessType(newName.trim());
     refreshAll();
   }
 }
