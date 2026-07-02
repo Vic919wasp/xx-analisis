@@ -903,64 +903,95 @@ async function startAnalysis() {
     return s.id + '. ' + s.name + ' (' + fmt(s.start) + ' - ' + fmt(s.end) + ')';
   }).join('\n');
 
+  const youtubeUrl = 'https://www.youtube.com/watch?v=' + currentVideoId;
+  const secDesc = SECTIONS.map(function(s) {
+    return s.id + '. ' + s.name + ' (' + fmt(s.start) + ' - ' + fmt(s.end) + ')';
+  }).join('\n');
+
   const prompt = [
-    'Sos un experto en teoría musical. Analizá la canción del video YouTube ID: ' + currentVideoId,
+    'Sos un experto en teoría musical con oído absoluto. Escuchá este video de YouTube y analizá la armonía real:',
+    youtubeUrl,
     '',
-    'El usuario definió manualmente estas secciones con sus tiempos exactos:',
+    'El usuario marcó manualmente estas secciones con sus tiempos exactos:',
     secDesc,
     '',
-    'Para CADA sección, analizá la armonía y ritmo que ocurre en esos tiempos específicos.',
-    'Usá tu conocimiento de la canción para determinar los acordes, modo, función tonal y métricas.',
+    'IMPORTANTE: Escuchá el audio real del video en cada timestamp.',
+    'Identificá los acordes REALES que suenan — no uses conocimiento previo de la canción.',
+    'Detectá la tonalidad central, los grados armónicos, el modo (dórico, frigio, etc.) y el compás.',
     '',
-    'Respondé SOLO con JSON (sin markdown):',
+    'Respondé SOLO con JSON válido (sin markdown, sin texto extra):',
     '{',
-    '  "title": "título exacto",',
-    '  "artist": "artista exacto",',
+    '  "title": "título real de la canción",',
+    '  "artist": "artista real",',
     '  "album": "álbum",',
     '  "year": 2000,',
     '  "genre": "género",',
     '  "total_duration": ' + Math.round(TOTAL) + ',',
     '  "bpm": 120,',
-    '  "key": "tonalidad global",',
+    '  "key": "tonalidad global (ej: D minor, G major)",',
     '  "sections": [',
     '    {',
     '      "id": "01",',
-    '      "name": "nombre dado por el usuario",',
+    '      "name": "nombre exacto del usuario",',
     '      "type": "chorus",',
     '      "start": 0,',
     '      "end": 30,',
     '      "time_signature": "4/4",',
-    '      "key": "E minor",',
-    '      "feel": "oscuro/pesado",',
+    '      "key": "D minor",',
+    '      "feel": "descripción del feel",',
     '      "bpm": 120,',
-    '      "chords": [{"name": "Em7", "function": "i7", "beats": "2", "type": "modal", "note": "tónica"}],',
+    '      "chords": [',
+    '        {"name": "Dm", "function": "i", "beats": "4", "type": "modal", "note": "tónica"}',
+    '      ],',
     '      "rhythm_pattern": [1,0,1,0,1,0,1,0],',
-    '      "rhythm_label": "4/4 negras",',
-    '      "comment": "descripción de 2 oraciones",',
-    '      "harmony": "análisis armónico detallado",',
-    '      "rhythm_analysis": "análisis rítmico",',
-    '      "color": "concepto/influencias",',
-    '      "voicings": "instrumentación/técnicas"',
+    '      "rhythm_label": "4/4 · negras",',
+    '      "comment": "descripción de 2 oraciones sobre lo que suena",',
+    '      "harmony": "análisis armónico detallado: modo, función tonal, progresión",',
+    '      "rhythm_analysis": "análisis rítmico: compás, agrupamiento, groove",',
+    '      "color": "color sonoro y referencias musicales",',
+    '      "voicings": "instrumentación y técnicas específicas"',
     '    }',
     '  ]',
     '}',
     '',
-    'IMPORTANTE: respetá los nombres y timestamps que el usuario definió.',
-    'chord type: modal/tension/resolve/jazz/bright/neutral',
-    'section type: intro/riff/verse/chorus/bridge/solo/break/outro/instrumental/precoro',
-    'Acordes ESPECÍFICOS de esta canción, no genéricos. Max 150 chars por campo de texto.'
-  ].join('\n');
+    'Reglas estrictas:',
+    '- chord type SOLO puede ser: modal, tension, resolve, jazz, bright, neutral',
+    '- section type SOLO puede ser: intro, riff, verse, chorus, bridge, solo, break, outro, instrumental, precoro',
+    '- Respetá los nombres y timestamps dados por el usuario',
+    '- Acordes con nombre completo: Dm, Gm, Bb, F, Am7, etc.',
+    '- Indicá la función tonal: i, iv, V7, ♭VII, ♭III, etc.',
+    '- Si hay cambios de compás indicalos: "4/4 → 7/8"',
+    '- Máximo 150 caracteres por campo de texto'
+  ].join('\n')
 
   try {
     setOvStep('CONSULTANDO GEMINI...', 30);
     const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + window.GEMINI_KEY;
+    // Gemini 2.5 puede analizar video de YouTube directamente via file_data
+    const ytUrl = 'https://www.youtube.com/watch?v=' + currentVideoId;
+    const requestBody = {
+      contents: [{
+        parts: [
+          {
+            file_data: {
+              file_uri: ytUrl,
+              mime_type: 'video/mp4'
+            }
+          },
+          { text: prompt }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 16384,
+        responseMimeType: 'application/json'
+      }
+    };
+
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 16384, responseMimeType: 'application/json' }
-      })
+      body: JSON.stringify(requestBody)
     });
     setOvStep('PROCESANDO RESPUESTA...', 65);
     if (!res.ok) { const e = await res.json(); throw new Error(e.error ? e.error.message : 'HTTP ' + res.status); }
