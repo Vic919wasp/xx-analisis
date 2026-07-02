@@ -903,11 +903,6 @@ async function startAnalysis() {
   document.getElementById('btnAnalyze').disabled = true;
   document.getElementById('btnAnalyze2') && (document.getElementById('btnAnalyze2').disabled = true);
 
-  // Construir descripción de secciones para el prompt
-  const secDesc = SECTIONS.map(function(s) {
-    return s.id + '. ' + s.name + ' (' + fmt(s.start) + ' - ' + fmt(s.end) + ')';
-  }).join('\n');
-
   const youtubeUrl = 'https://www.youtube.com/watch?v=' + currentVideoId;
   const secDesc = SECTIONS.map(function(s) {
     return s.id + '. ' + s.name + ' (' + fmt(s.start) + ' - ' + fmt(s.end) + ')';
