@@ -540,7 +540,7 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
         <div class="user-avatar" id="userAvatar">?</div>
         <span id="userName">—</span>
       </div>
-      <button class="nav-btn" id="navAuth" onclick="showView('auth')">INGRESAR</button>
+      <button class="nav-btn" id="navAuth" onclick="showView('auth')" title="Iniciar sesión para guardar análisis">INGRESAR</button>
       <button class="nav-btn" id="navLogout" onclick="logout()" style="display:none">SALIR</button>
     </nav>
   </header>
@@ -724,9 +724,12 @@ const glbl = t => gt(t).label;
 // [005] AUTH
 function updateAuthUI() {
   const loggedIn = !!authToken && !!authUser;
-  document.getElementById('navAuth').style.display    = loggedIn ? 'none' : '';
-  document.getElementById('navLogout').style.display  = loggedIn ? '' : 'none';
-  document.getElementById('userChip').style.display   = loggedIn ? '' : 'none';
+  const navAuth = document.getElementById('navAuth');
+  const navLogout = document.getElementById('navLogout');
+  const userChip = document.getElementById('userChip');
+  if (navAuth) navAuth.style.display    = loggedIn ? 'none' : '';
+  if (navLogout) navLogout.style.display  = loggedIn ? '' : 'none';
+  if (userChip) userChip.style.display   = loggedIn ? '' : 'none';
   if (loggedIn && authUser) {
     document.getElementById('userName').textContent = authUser.username;
     const av = document.getElementById('userAvatar');
@@ -753,7 +756,9 @@ async function login() {
     localStorage.setItem('xx_user', JSON.stringify(authUser));
     updateAuthUI();
     showView('analyzer');
-  } catch(e) { document.getElementById('loginError').textContent = e.message; }
+  } catch(e) {
+    document.getElementById('loginError').textContent = e.message;
+  }
 }
 
 async function register() {
@@ -1046,7 +1051,10 @@ async function startAnalysis() {
 
 // SAVE
 function openSaveModal() {
-  if (!authToken) return setStatus('error', 'Necesitás una cuenta para guardar análisis.');
+  if (!authToken) {
+    setStatus('error', 'Necesitás una cuenta para guardar. Click en INGRESAR arriba.');
+    return;
+  }
   if (!currentAnalysis) return;
   document.getElementById('saveLabel').value = 'Análisis principal';
   document.getElementById('saveNotas').value = '';
@@ -1832,8 +1840,8 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Si ya tiene token, ir directo al analyzer
-if (authToken && authUser) showView('analyzer');
+// Ir directo al analyzer siempre — auth solo se requiere para guardar
+showView('analyzer');
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
