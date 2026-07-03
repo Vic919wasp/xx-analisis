@@ -7,7 +7,7 @@
      [002] ESTILOS CSS          - línea 22
      [003] HTML — VISTAS        - línea 310
      [004] DATOS Y ESTADO       - línea 460
-     [005] AUTH                 - línea 510 
+     [005] AUTH                 - línea 510
      [006] YOUTUBE API          - línea 560
      [007] GEMINI / ANALIZAR    - línea 610
      [008] TIMELINE DRAG        - línea 680
@@ -844,50 +844,80 @@ function onYouTubeIframeAPIReady() {
 }
 
 function createPlayer(vid) {
-  // El player va dentro de video-wrap-inner > ytPlayer
   const wrap = document.getElementById('ytPlayer');
   if (wrap) wrap.innerHTML = '';
   if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy();
+
   ytPlayer = new YT.Player('ytPlayer', {
     height: '100%', width: '100%', videoId: vid,
-    playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1, enablejsapi: 1, origin: 'https://vic919wasp.github.io', widget_referrer: 'https://vic919wasp.github.io/xx-analisis/' },
+    playerVars: {
+      autoplay: 0, controls: 1, rel: 0, modestbranding: 1,
+      enablejsapi: 1,
+      origin: window.location.origin,
+      widget_referrer: window.location.href
+    },
     events: {
       onReady: function(e) {
         const btnP = document.getElementById('btnPlay');
         const btnM = document.getElementById('btnMark');
-        if (btnP) { btnP.disabled = false; }
+        if (btnP) btnP.disabled = false;
         if (btnM) { btnM.disabled = false; btnM.style.opacity = '1'; }
-        const dur = e.target.getDuration();
-        if (dur > 0) TOTAL = dur;
-        setStatus('success', 'Listo (' + fmt(dur) + ') · Dale play y presioná M para marcar secciones');
+        try {
+          const dur = e.target.getDuration();
+          if (dur > 0) TOTAL = dur;
+          setStatus('success', 'Listo (' + fmt(dur) + ') · Dale play y presioná M para marcar secciones');
+        } catch(ex) {
+          setStatus('success', 'Video listo · Dale play y presioná M para marcar secciones');
+        }
+        startPlayerPolling();
       },
-      onStateChange: e => {
-        const btn = document.getElementById('btnPlay');
-        if (e.data === YT.PlayerState.PLAYING) { startSync(); if (btn) btn.textContent = '⏸'; }
-        else { stopSync(); if (btn) btn.textContent = '▶'; }
+      onStateChange: function(e) { handlePlayerState(e.data); },
+      onError: function(e) {
+        setStatus('error', 'Error al cargar el video. Probá desactivar Shields en Brave (ícono del león).');
       }
     }
   });
 }
 
-function togglePlay() {
-  if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
-  if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-  else ytPlayer.playVideo();
-}
+let pollInterval = null;
+let lastPlayerState = -1;
 
-function startSync() {
-  stopSync();
-  syncInterval = setInterval(() => {
-    if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
-    const t = Math.max(0, ytPlayer.getCurrentTime() + offsetSecs);
-    const sec = getSectionAt(t);
-    if (sec !== currentSection) { currentSection = sec; renderDetail(sec); renderSList(); }
-    updateTransport(t, sec);
-    updatePlayhead(t);
+function startPlayerPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(function() {
+    if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+    try {
+      const state = ytPlayer.getPlayerState();
+      if (state !== lastPlayerState) { lastPlayerState = state; handlePlayerState(state); }
+      if (state === 1) {
+        const t = Math.max(0, ytPlayer.getCurrentTime() + offsetSecs);
+        const sec = getSectionAt(t);
+        if (sec !== currentSection) { currentSection = sec; renderDetail(sec); renderSList(); }
+        updateTransport(t, sec);
+        updatePlayhead(t);
+      }
+    } catch(e) {}
   }, 150);
 }
-function stopSync() { if (syncInterval) { clearInterval(syncInterval); syncInterval = null; } }
+
+function handlePlayerState(state) {
+  const btn = document.getElementById('btnPlay');
+  if (state === 1) { if (btn) btn.textContent = '⏸'; }
+  else             { if (btn) btn.textContent = '▶'; }
+}
+
+
+function togglePlay() {
+  if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+  try {
+    const state = ytPlayer.getPlayerState();
+    if (state === 1) ytPlayer.pauseVideo();
+    else ytPlayer.playVideo();
+  } catch(e) { console.warn('togglePlay error:', e); }
+}
+
+function startSync() { /* sync manejado por polling */ }
+function stopSync()  { /* sync manejado por polling */ }
 function getSectionAt(t) { for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start && !disabledSections.has(i)) return i; for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start) return i; return 0; }
 function updateSync(v) { offsetSecs = parseFloat(v); document.getElementById('syncVal').textContent = parseFloat(v).toFixed(1) + 's'; }
 
