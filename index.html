@@ -2,12 +2,12 @@
      XX Analysis v2 — Estética Dream Theater
      Video + Timeline editable + Base de datos compartida
      ============================================================
-     ÍNDICE DE NAVEGACIÓN  
-     [001] HEAD / META          - línea 14 
+     ÍNDICE DE NAVEGACIÓN
+     [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
      [003] HTML — VISTAS        - línea 310
      [004] DATOS Y ESTADO       - línea 460
-     [005] AUTH                 - línea 510
+     [005] AUTH                 - línea 510 
      [006] YOUTUBE API          - línea 560
      [007] GEMINI / ANALIZAR    - línea 610
      [008] TIMELINE DRAG        - línea 680
@@ -850,8 +850,7 @@ function createPlayer(vid) {
   if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy();
   ytPlayer = new YT.Player('ytPlayer', {
     height: '100%', width: '100%', videoId: vid,
-    host: 'https://www.youtube-nocookie.com',
-    playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1, enablejsapi: 1, origin: 'https://vic919wasp.github.io' },
+    playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1, enablejsapi: 1, origin: 'https://vic919wasp.github.io', widget_referrer: 'https://vic919wasp.github.io/xx-analisis/' },
     events: {
       onReady: function(e) {
         const btnP = document.getElementById('btnPlay');
