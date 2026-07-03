@@ -3,7 +3,7 @@
      Video + Timeline editable + Base de datos compartida
      ============================================================
      ÍNDICE DE NAVEGACIÓN
-     [001] HEAD / META          - línea 14 
+     [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
      [003] HTML — VISTAS        - línea 310
      [004] DATOS Y ESTADO       - línea 460
@@ -153,12 +153,15 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .auth-error { font-size: 11px; color: #c84b4b; margin-top: .5rem; text-align: center; }
 
 /* ── ANALYZER VIEW ── */
-.analyzer { flex: 1; display: flex; flex-direction: column; }
+.analyzer { flex: 1; display: grid; grid-template-columns: 1fr 300px; grid-template-rows: auto auto auto auto 1fr; position: relative; }
+.analyzer-left { grid-column: 1; display: flex; flex-direction: column; }
+.analyzer-right { grid-column: 2; grid-row: 1 / -1; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: hidden; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); }
 
 /* Input bar */
 .input-bar {
   background: var(--surface); border-bottom: 1px solid var(--border);
   padding: .625rem 1rem; display: flex; gap: 8px; align-items: center;
+  grid-column: 1 / -1;
 }
 .url-input {
   flex: 1; background: var(--deep); border: 1px solid var(--border2);
@@ -185,14 +188,16 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .btn-save.show { display: block; }
 
 /* STATUS */
-.status-bar { padding: 4px 1rem; font-size: 11px; display: none; }
+.status-bar { padding: 4px 1rem; font-size: 11px; display: none; grid-column: 1 / -1; }
 .status-bar.loading { background: rgba(184,150,46,0.08); color: var(--gold2); display: block; }
 .status-bar.error   { background: rgba(139,32,32,0.15); color: #e07070; display: block; }
 .status-bar.success { background: rgba(42,107,58,0.15); color: #70c080; display: block; }
 
 /* VIDEO SECTION */
 .video-section { background: #000; position: relative; }
-.video-wrap { position: relative; width: 100%; padding-top: 46%; background: #000; }
+.video-wrap { position: relative; width: 100%; background: #000; }
+.video-wrap-inner { position: relative; padding-top: 56.25%; }
+.video-wrap-inner > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .video-wrap > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .video-wrap iframe { width: 100%; height: 100%; border: none; }
 .video-placeholder {
@@ -580,93 +585,103 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
   <!-- ANALYZER VIEW -->
   <div class="view" id="viewAnalyzer">
     <div class="analyzer">
-      <!-- Input -->
-      <div class="input-bar">
+      <!-- INPUT BAR — full width -->
+      <div class="input-bar" style="grid-column:1/-1">
         <input type="text" class="url-input" id="ytUrl" placeholder="Pegá una URL de YouTube...">
         <button class="btn-analyze" id="btnLoadVideo" onclick="loadVideoOnly()">CARGAR VIDEO</button>
         <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()" style="display:none;background:linear-gradient(135deg,var(--gold),var(--gold2))">♪ ANALIZAR ARMONÍA</button>
         <button class="btn-save" id="btnSave" onclick="openSaveModal()">GUARDAR</button>
       </div>
-      <div class="status-bar" id="statusBar"></div>
+      <div class="status-bar" id="statusBar" style="grid-column:1/-1"></div>
 
-      <!-- Video -->
-      <div class="video-section">
-        <div class="video-wrap">
-          <div id="ytPlayer">
-            <div class="video-placeholder">
-              <div class="vph-icon">▷</div>
-              <div class="vph-text">PEGÁ UNA URL DE YOUTUBE PARA COMENZAR</div>
+      <!-- LEFT: video + transport + track + detail -->
+      <div class="analyzer-left">
+
+        <!-- Video -->
+        <div class="video-section">
+          <div class="video-wrap">
+            <div class="video-wrap-inner">
+              <div id="ytPlayer">
+                <div class="video-placeholder">
+                  <div class="vph-icon">▷</div>
+                  <div class="vph-text">PEGÁ UNA URL DE YOUTUBE PARA COMENZAR</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Transport -->
-      <div class="transport">
-        <button class="btn-play" id="btnPlay" onclick="togglePlay()" disabled>▶</button>
-        <button id="btnMark" onclick="markNow()" disabled
-          style="padding:6px 14px;background:transparent;border:1.5px solid var(--gold);border-radius:var(--r);color:var(--gold);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s;white-space:nowrap"
-          title="Marcar inicio de sección en el tiempo actual (M)">
-          ● MARCAR
-        </button>
-        <div>
-          <div class="now-section" id="nowSection">— ESPERANDO ANÁLISIS —</div>
-          <div class="now-meta" id="nowMeta">—</div>
+        <!-- Transport -->
+        <div class="transport">
+          <button class="btn-play" id="btnPlay" onclick="togglePlay()" disabled>▶</button>
+          <button id="btnMark" onclick="markNow()" disabled
+            style="padding:6px 14px;background:transparent;border:1.5px solid var(--gold);border-radius:var(--r);color:var(--gold);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s;white-space:nowrap"
+            title="Marcar inicio de sección (M)">
+            ● MARCAR
+          </button>
+          <div style="flex:1;min-width:0">
+            <div class="now-section" id="nowSection">— PEGÁ UNA URL Y CARGÁ EL VIDEO —</div>
+            <div class="now-meta" id="nowMeta">—</div>
+          </div>
+          <div class="now-time" id="nowTime">0:00</div>
+          <span class="sync-label">SYNC</span>
+          <input type="range" class="sync-slider" id="syncSlider" min="-15" max="15" step="0.5" value="0" oninput="updateSync(this.value)">
+          <span class="sync-val" id="syncVal">0.0s</span>
         </div>
-        <div class="now-time" id="nowTime">0:00</div>
-        <span class="sync-label">SYNC</span>
-        <input type="range" class="sync-slider" id="syncSlider" min="-15" max="15" step="0.5" value="0" oninput="updateSync(this.value)">
-        <span class="sync-val" id="syncVal">0.0s</span>
-      </div>
 
-      <!-- Track interactivo -->
-      <div class="timeline-section" id="trackSection">
-        <div class="tl-header">
-          <span class="tl-title" id="tlTitle">TRACK — hacé click para agregar una sección · arrastrá los bordes para ajustar</span>
-          <span style="display:flex;gap:6px;align-items:center">
-            <span class="tl-hint" id="tlHint"></span>
-            <button onclick="clearAllSections()" style="font-size:9px;color:var(--tx3);background:none;border:1px solid var(--border);border-radius:2px;padding:2px 6px;cursor:pointer;transition:all .15s" title="Limpiar todo">✕ LIMPIAR</button>
-          </span>
-        </div>
-        <div class="timeline" id="timeline" style="cursor:crosshair">
-          <div class="tl-playhead" id="tlPlayhead" style="left:0%"></div>
-          <div class="tl-tooltip" id="tlTooltip"></div>
-          <div id="tlEmpty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:11px;pointer-events:none;letter-spacing:.08em">CLICK PARA AGREGAR SECCIONES</div>
-        </div>
-        <!-- Botón analizar armonía flotante -->
-        <div id="analyzeBar" style="display:none;margin-top:.5rem;display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--tx3)" id="secCountTrack">0 secciones</span>
-          <button id="btnAnalyze2" onclick="startAnalysis()" style="padding:6px 16px;background:var(--gold);color:#000;border:none;border-radius:var(--r);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s">♪ ANALIZAR ARMONÍA</button>
-        </div>
-      </div>
-
-      <!-- TYPE POPUP -->
-      <div class="type-popup" id="typePopup"></div>
-
-      <!-- SECTION CARDS — horizontal, draggable, editable -->
-      <div class="sec-cards-wrap" id="secCardsWrap" style="display:none">
-        <div class="sec-cards-label">
-          <span>SECCIONES — arrastrá para reordenar · click en tipo para cambiar · ✕ para eliminar</span>
-          <button onclick="addSection()">+ AGREGAR</button>
-        </div>
-        <div class="sec-cards" id="secCards"></div>
-      </div>
-
-      <!-- Main -->
-      <div class="main-content">
-        <!-- Detail -->
-        <div class="detail-panel" id="detailPanel">
-          <div class="det-empty">
-            <div class="det-empty-icon">♩</div>
-            <div>Analizá una canción para ver el análisis</div>
+        <!-- Track -->
+        <div class="timeline-section" id="trackSection">
+          <div class="tl-header">
+            <span class="tl-title">TRACK · presioná M o ● MARCAR al inicio de cada sección</span>
+            <span style="display:flex;gap:6px;align-items:center">
+              <span class="tl-hint" id="tlHint"></span>
+              <span style="font-size:10px;color:var(--tx3)" id="secCountTrack"></span>
+              <button id="btnAnalyze2" onclick="startAnalysis()" style="display:none;padding:4px 10px;background:var(--gold);color:#000;border:none;border-radius:var(--r);cursor:pointer;font-family:var(--fc);font-size:10px;font-weight:600;letter-spacing:.06em">♪ ANALIZAR</button>
+              <button onclick="clearAllSections()" style="font-size:9px;color:var(--tx3);background:none;border:1px solid var(--border);border-radius:2px;padding:2px 6px;cursor:pointer">✕ LIMPIAR</button>
+            </span>
+          </div>
+          <div class="timeline" id="timeline">
+            <div class="tl-playhead" id="tlPlayhead" style="left:0%"></div>
+            <div class="tl-tooltip" id="tlTooltip"></div>
+            <div id="tlEmpty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:11px;pointer-events:none;letter-spacing:.08em">CARGÁ UN VIDEO · PRESIONÁ M PARA MARCAR SECCIONES</div>
           </div>
         </div>
-        <!-- Section list -->
-        <div class="section-list">
-          <div class="sl-header">SECCIONES <span id="secCount">—</span></div>
-          <div id="slist"></div>
+
+        <!-- TYPE POPUP -->
+        <div class="type-popup" id="typePopup"></div>
+
+        <!-- Detail panel -->
+        <div class="detail-panel" id="detailPanel" style="flex:1;overflow-y:auto">
+          <div class="det-empty">
+            <div class="det-empty-icon">♩</div>
+            <div>Marcá secciones y analizá para ver el análisis armónico</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: panel flotante de secciones editable -->
+      <div class="analyzer-right">
+        <div style="padding:.625rem .875rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-family:var(--fc);font-size:11px;color:var(--gold2);letter-spacing:.08em">SECCIONES</span>
+          <span style="font-size:10px;color:var(--tx3)" id="secCount">—</span>
+        </div>
+        <!-- Cards editables -->
+        <div id="secCardsWrap" style="overflow-y:auto;flex:1;padding:.5rem">
+          <div id="secCards" style="display:flex;flex-direction:column;gap:5px"></div>
+          <div id="secEmptyRight" style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:11px;line-height:1.8">
+            Cargá un video<br>y presioná <strong style="color:var(--gold)">M</strong> para<br>marcar secciones
+          </div>
+        </div>
+        <!-- Botón guardar análisis -->
+        <div style="padding:.5rem;border-top:1px solid var(--border)">
+          <div id="analyzeBar" style="display:none">
+            <button id="btnAnalyzeRight" onclick="startAnalysis()" style="width:100%;padding:8px;background:var(--gold);color:#000;border:none;border-radius:var(--r);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s;margin-bottom:4px">♪ ANALIZAR ARMONÍA</button>
+          </div>
         </div>
       </div>
+
+</div>
     </div>
   </div>
 
@@ -807,8 +822,9 @@ function onYouTubeIframeAPIReady() {
 }
 
 function createPlayer(vid) {
+  // El player va dentro de video-wrap-inner > ytPlayer
   const wrap = document.getElementById('ytPlayer');
-  wrap.innerHTML = '';
+  if (wrap) wrap.innerHTML = '';
   if (ytPlayer && ytPlayer.destroy) ytPlayer.destroy();
   ytPlayer = new YT.Player('ytPlayer', {
     height: '100%', width: '100%', videoId: vid,
@@ -1152,80 +1168,127 @@ const TYPE_LABELS = { intro:'INTRO', verse:'VERSO', 'pre-coro':'PRE-CORO', choru
 let dragSrcIdx = null;
 
 function buildSecCards() {
-  const wrap = document.getElementById('secCardsWrap');
   const container = document.getElementById('secCards');
-  if (!SECTIONS.length) { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'block';
+  const emptyRight = document.getElementById('secEmptyRight');
+  const analyzeBar = document.getElementById('analyzeBar');
+  const secCount = document.getElementById('secCount');
+  if (!container) return;
+
   container.innerHTML = '';
+
+  if (!SECTIONS.length) {
+    if (emptyRight) emptyRight.style.display = 'block';
+    if (analyzeBar) analyzeBar.style.display = 'none';
+    if (secCount) secCount.textContent = '—';
+    updateAnalyzeBar();
+    return;
+  }
+
+  if (emptyRight) emptyRight.style.display = 'none';
+  if (analyzeBar) analyzeBar.style.display = 'block';
+  if (secCount) secCount.textContent = SECTIONS.length + ' secc.';
 
   SECTIONS.forEach(function(s, i) {
     const T = gt(s.type);
     const disabled = disabledSections.has(i);
+
     const card = document.createElement('div');
-    card.className = 'sec-card' + (disabled ? ' disabled-card' : '');
     card.id = 'scard' + i;
     card.draggable = true;
-    card.style.background = T.bg;
-    card.style.borderColor = T.accent + '66';
+    card.style.cssText = [
+      'background:' + T.bg,
+      'border:1px solid ' + T.accent + '55',
+      'border-left:3px solid ' + T.accent,
+      'border-radius:4px',
+      'padding:8px 10px',
+      'cursor:grab',
+      'opacity:' + (disabled ? '.35' : '1'),
+      'transition:opacity .2s,border-color .2s',
+      'position:relative'
+    ].join(';');
 
-    // Type label
-    const typeDiv = document.createElement('div');
-    typeDiv.className = 'sc-type';
-    typeDiv.style.color = T.label;
-    typeDiv.style.cursor = 'pointer';
-    typeDiv.textContent = (TYPE_LABELS[s.type ? s.type.toLowerCase() : ''] || (s.type || 'TIPO').toUpperCase()) + ' ▾';
-    typeDiv.addEventListener('click', function(e) { e.stopPropagation(); openTypePopup(i, typeDiv); });
+    // Tipo — clickeable para cambiar
+    const typeRow = document.createElement('div');
+    typeRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px';
 
-    // Name
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'sc-name';
-    nameDiv.textContent = s.name;
+    const typeBtn = document.createElement('span');
+    typeBtn.style.cssText = 'font-size:9px;font-weight:600;letter-spacing:.08em;color:' + T.label + ';cursor:pointer;padding:1px 5px;border:1px solid ' + T.accent + '44;border-radius:2px';
+    typeBtn.textContent = (TYPE_LABELS[s.type ? s.type.toLowerCase() : ''] || (s.type || 'TIPO').toUpperCase()) + ' ▾';
+    typeBtn.addEventListener('click', function(e) { e.stopPropagation(); openTypePopup(i, typeBtn); });
 
-    // Time
-    const timeDiv = document.createElement('div');
-    timeDiv.className = 'sc-time';
-    timeDiv.textContent = fmt(s.start) + ' – ' + fmt(s.end);
+    // Acciones
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex;gap:3px';
 
-    // Actions
-    const actDiv = document.createElement('div');
-    actDiv.className = 'sc-actions';
-
-    const btnToggle = document.createElement('button');
-    btnToggle.className = 'sc-btn toggle-btn' + (disabled ? ' off' : '');
-    btnToggle.textContent = disabled ? '✗' : '✓';
-    btnToggle.title = disabled ? 'Activar' : 'Desactivar';
-    btnToggle.addEventListener('click', function(e) { e.stopPropagation(); toggleSection(i); });
-
-    const btnEdit = document.createElement('button');
-    btnEdit.className = 'sc-btn';
-    btnEdit.textContent = '✎';
-    btnEdit.title = 'Editar nombre';
-    btnEdit.addEventListener('click', function(e) { e.stopPropagation(); editSectionName(i); });
+    const btnTog = document.createElement('button');
+    btnTog.style.cssText = 'background:none;border:1px solid ' + (disabled ? '#333' : T.accent + '44') + ';border-radius:2px;color:' + (disabled ? '#444' : T.label) + ';cursor:pointer;font-size:9px;padding:1px 5px;line-height:1';
+    btnTog.textContent = disabled ? '✗' : '✓';
+    btnTog.addEventListener('click', function(e) { e.stopPropagation(); toggleSection(i); });
 
     const btnDel = document.createElement('button');
-    btnDel.className = 'sc-btn delete';
+    btnDel.style.cssText = 'background:none;border:1px solid #333;border-radius:2px;color:#666;cursor:pointer;font-size:9px;padding:1px 5px;line-height:1';
     btnDel.textContent = '×';
-    btnDel.title = 'Eliminar';
     btnDel.addEventListener('click', function(e) { e.stopPropagation(); deleteSection(i); });
 
-    actDiv.appendChild(btnToggle);
-    actDiv.appendChild(btnEdit);
-    actDiv.appendChild(btnDel);
-    card.appendChild(typeDiv);
-    card.appendChild(nameDiv);
-    card.appendChild(timeDiv);
-    card.appendChild(actDiv);
+    actions.appendChild(btnTog);
+    actions.appendChild(btnDel);
+    typeRow.appendChild(typeBtn);
+    typeRow.appendChild(actions);
 
-    // Drag events
+    // Nombre — editable inline con doble click
+    const nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:12px;color:var(--tx);margin-bottom:3px;cursor:text';
+    nameEl.textContent = s.name;
+    nameEl.title = 'Doble click para editar';
+    nameEl.addEventListener('dblclick', function(e) {
+      e.stopPropagation();
+      nameEl.contentEditable = 'true';
+      nameEl.style.outline = '1px solid ' + T.accent;
+      nameEl.style.borderRadius = '2px';
+      nameEl.focus();
+      // Seleccionar todo
+      const range = document.createRange();
+      range.selectNodeContents(nameEl);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+    });
+    nameEl.addEventListener('blur', function() {
+      nameEl.contentEditable = 'false';
+      nameEl.style.outline = 'none';
+      const newName = nameEl.textContent.trim();
+      if (newName && newName !== SECTIONS[i].name) {
+        SECTIONS[i].name = newName;
+        SECTIONS[i].type = guessType(newName);
+        refreshAll();
+      }
+    });
+    nameEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+      if (e.key === 'Escape') { nameEl.textContent = SECTIONS[i].name; nameEl.blur(); }
+    });
+
+    // Tiempo
+    const timeEl = document.createElement('div');
+    timeEl.style.cssText = 'font-family:var(--fm);font-size:9px;color:var(--tx3)';
+    timeEl.textContent = fmt(s.start) + ' – ' + fmt(s.end) + ' · ' + Math.round(s.end - s.start) + 's';
+
+    card.appendChild(typeRow);
+    card.appendChild(nameEl);
+    card.appendChild(timeEl);
+
+    // Drag para reordenar
     card.addEventListener('dragstart', function(e) { cardDragStart(e, i); });
     card.addEventListener('dragover',  function(e) { cardDragOver(e, i); });
     card.addEventListener('drop',      function(e) { cardDrop(e, i); });
     card.addEventListener('dragend',   cardDragEnd);
-    card.addEventListener('click',     function() { seekTo(i); });
+    card.addEventListener('click',     function() { seekTo(i); renderDetail(i); });
 
     container.appendChild(card);
   });
+
+  updateAnalyzeBar();
 }
+
 
 function cardDragStart(e, i) {
   dragSrcIdx = i;
@@ -1518,18 +1581,33 @@ function guessType(name) {
 }
 
 function updateAnalyzeBar() {
-  const bar = document.getElementById('analyzeBar');
+  const has = SECTIONS.length > 0;
+
+  // Barra de analizar en el track
+  const bar  = document.getElementById('analyzeBar');
+  if (bar) bar.style.display = has ? 'block' : 'none';
+
+  // Contador en el track header
   const cnt = document.getElementById('secCountTrack');
-  if (bar) bar.style.display = SECTIONS.length ? 'flex' : 'none';
-  if (cnt) cnt.textContent = SECTIONS.length + ' secci' + (SECTIONS.length === 1 ? 'ón' : 'ones');
+  if (cnt) cnt.textContent = has ? (SECTIONS.length + ' secc.') : '';
+
+  // Botón analizar en el track header
+  const btn2 = document.getElementById('btnAnalyze2');
+  if (btn2) btn2.style.display = has ? 'inline-block' : 'none';
+
+  // Botón analizar en el input bar
   const btnA = document.getElementById('btnAnalyze');
-  if (btnA) btnA.style.display = SECTIONS.length ? 'inline-block' : 'none';
+  if (btnA) btnA.style.display = has ? 'inline-block' : 'none';
   const btnL = document.getElementById('btnLoadVideo');
-  if (btnL) btnL.style.display = SECTIONS.length ? 'none' : 'inline-block';
-  if (!SECTIONS.length) {
-    const empty = document.getElementById('tlEmpty');
-    if (empty) empty.style.display = 'flex';
-  }
+  if (btnL) btnL.style.display = has ? 'none' : 'inline-block';
+
+  // Empty state en timeline
+  const tlEmpty = document.getElementById('tlEmpty');
+  if (tlEmpty) tlEmpty.style.display = has ? 'none' : 'flex';
+
+  // Empty state en panel derecho
+  const emptyRight = document.getElementById('secEmptyRight');
+  if (emptyRight) emptyRight.style.display = has ? 'none' : 'block';
 }
 
 function clearAllSections() {
