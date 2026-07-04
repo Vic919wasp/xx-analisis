@@ -1,6 +1,6 @@
 <!-- ============================================================
      XX Analysis v2 — Estética Dream Theater
-     Video + Timeline editable + Base de datos compartida  
+     Video + Timeline editable + Base de datos compartida
      ============================================================
      ÍNDICE DE NAVEGACIÓN
      [001] HEAD / META          - línea 14
@@ -251,9 +251,10 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .tl-title { font-size: 9px; color: var(--tx3); letter-spacing: .1em; text-transform: uppercase; }
 .tl-hint { font-size: 9px; color: var(--tx3); font-style: italic; }
 .timeline {
-  position: relative; height: 48px; background: var(--surface);
+  position: relative; height: 48px; background: var(--surface2);
   border: 1px solid var(--border); border-radius: var(--r);
-  overflow: visible; cursor: default; flex-shrink: 0;
+  overflow: hidden; cursor: default; flex-shrink: 0;
+  margin: 0;
 }
 .tl-playhead {
   position: absolute; top: 0; bottom: 0; width: 1px;
@@ -972,18 +973,37 @@ let internalTime = 0;
 
 function startPlayerPolling() {
   if (pollInterval) clearInterval(pollInterval);
-  // Reloj interno — avanza cuando el usuario da play manualmente en el video
-  // El usuario controla play/pausa con los controles nativos de YouTube
-  // Nuestro reloj se sincroniza con el botón PLAY de nuestro panel
   pollInterval = setInterval(function() {
-    if (!isPlaying) return;
-    internalTime += 0.15;
-    if (TOTAL > 0 && internalTime > TOTAL) internalTime = TOTAL;
-    const t = Math.max(0, internalTime + offsetSecs);
-    const sec = getSectionAt(t);
+    // Intentar leer el tiempo del elemento <video> nativo dentro del iframe
+    let t = null;
+    try {
+      const fr = document.getElementById('ytIframe');
+      if (fr && fr.contentDocument) {
+        const vid = fr.contentDocument.querySelector('video');
+        if (vid && !vid.paused) {
+          t = vid.currentTime;
+          internalTime = t;
+          if (!isPlaying) { isPlaying = true; handlePlayerState(1); }
+        } else if (vid && vid.paused && isPlaying) {
+          isPlaying = false; handlePlayerState(2);
+        }
+        if (vid && vid.duration && !TOTAL) TOTAL = vid.duration;
+      }
+    } catch(e) {}
+
+    // Fallback: reloj interno si no podemos leer el iframe
+    if (t === null) {
+      if (!isPlaying) return;
+      internalTime += 0.15;
+      if (TOTAL > 0 && internalTime > TOTAL) { internalTime = TOTAL; isPlaying = false; }
+      t = internalTime;
+    }
+
+    const tt = Math.max(0, t + offsetSecs);
+    const sec = getSectionAt(tt);
     if (sec !== currentSection) { currentSection = sec; renderDetail(sec); renderSList(); }
-    updateTransport(t, sec);
-    updatePlayhead(t);
+    updateTransport(tt, sec);
+    updatePlayhead(tt);
   }, 150);
 }
 
@@ -1613,7 +1633,8 @@ function buildTL() {
 }
 
 function updatePlayhead(t) {
-  const pct = Math.min(100, (t / TOTAL) * 100);
+  const T = TOTAL || 300;
+  const pct = Math.min(100, Math.max(0, (t / T) * 100));
   const ph = document.getElementById('tlPlayhead');
   if (ph) ph.style.left = pct + '%';
   SECTIONS.forEach((s, i) => {
@@ -1723,6 +1744,18 @@ function markNow() {
     }, 180);
   }
 
+  // Si TOTAL no está definido, estimarlo
+  if (!TOTAL || TOTAL < internalTime) {
+    try {
+      const fr = document.getElementById('ytIframe');
+      if (fr && fr.contentDocument) {
+        const vid = fr.contentDocument.querySelector('video');
+        if (vid && vid.duration) TOTAL = vid.duration;
+      }
+    } catch(e) {}
+    if (!TOTAL) TOTAL = Math.max(internalTime * 2, 300);
+  }
+
   buildTL();
   buildSecCards();
   renderSList();
@@ -1793,8 +1826,11 @@ function clearAllSections() {
 function refreshSeg(i) {
   const seg = document.getElementById('tls' + i);
   if (!seg || !SECTIONS[i]) return;
-  seg.style.left  = (SECTIONS[i].start / TOTAL * 100) + '%';
-  seg.style.width = ((SECTIONS[i].end - SECTIONS[i].start) / TOTAL * 100) + '%';
+  const T = TOTAL || 300;
+  const left  = Math.max(0, Math.min(100, (SECTIONS[i].start / T) * 100));
+  const width = Math.max(0.5, Math.min(100 - left, ((SECTIONS[i].end - SECTIONS[i].start) / T) * 100));
+  seg.style.left  = left + '%';
+  seg.style.width = width + '%';
 }
 
 // [009] BIBLIOTECA
