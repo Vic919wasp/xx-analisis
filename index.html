@@ -229,12 +229,7 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 .vph-text { font-size: 12px; letter-spacing: .1em; }
 
 /* TRANSPORT BAR */
-.transport {
-  background: var(--surface); border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: .5rem 1rem; display: flex; align-items: center; gap: 8px;
-  flex-shrink: 0; flex-wrap: wrap;
-}
+/* transport moved to right panel */
 .btn-play {
   width: 32px; height: 32px; border-radius: 50%;
   background: var(--gold); border: none; cursor: pointer;
@@ -243,16 +238,12 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 }
 .btn-play:hover { background: var(--gold2); box-shadow: 0 0 10px rgba(184,150,46,0.4); }
 .btn-play:disabled { opacity: .3; cursor: not-allowed; }
-.now-section {
-  font-family: var(--fc); font-size: 15px; color: var(--gold2);
-  letter-spacing: .06em; flex: 1; min-width: 0; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-}
+
 .now-meta { font-family: var(--fm); font-size: 10px; color: var(--tx3); }
-.now-time { font-family: var(--fm); font-size: 16px; color: var(--silver2); min-width: 48px; }
-.sync-label { font-size: 10px; color: var(--tx3); }
-.sync-slider { accent-color: var(--gold); width: 80px; }
-.sync-val { font-family: var(--fm); font-size: 10px; color: var(--gold); min-width: 32px; }
+
+
+
+
 
 /* TIMELINE */
 .timeline-section { padding: .375rem 1rem .5rem; background: var(--deep); border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -612,7 +603,6 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
         <input type="text" class="url-input" id="ytUrl" placeholder="Pegá una URL de YouTube...">
         <button class="btn-analyze" id="btnLoadVideo" onclick="loadVideoOnly()">CARGAR VIDEO</button>
         <button class="btn-analyze" id="btnAnalyze" onclick="startAnalysis()" style="display:none;background:linear-gradient(135deg,var(--gold),var(--gold2))">♪ ANALIZAR ARMONÍA</button>
-        <button class="btn-save" id="btnSave" onclick="openSaveModal()">GUARDAR</button>
       </div>
       <div class="status-bar" id="statusBar" style="grid-column:1/-1"></div>
 
@@ -633,23 +623,8 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
           </div>
         </div>
 
-        <!-- Transport -->
-        <div class="transport">
-          <button class="btn-play" id="btnPlay" onclick="togglePlay()" disabled>▶</button>
-          <button id="btnMark" onclick="markNow()" disabled
-            style="padding:5px 10px;background:transparent;border:1.5px solid var(--gold);border-radius:var(--r);color:var(--gold);cursor:pointer;font-family:var(--fc);font-size:10px;font-weight:600;letter-spacing:.06em;transition:all .2s;white-space:nowrap;opacity:.5"
-            title="Marcar inicio de sección (M)">
-            ● MARCAR
-          </button>
-          <div style="flex:1;min-width:0">
-            <div class="now-section" id="nowSection">— PEGÁ UNA URL Y CARGÁ EL VIDEO —</div>
-            <div class="now-meta" id="nowMeta">—</div>
-          </div>
-          <div class="now-time" id="nowTime">0:00</div>
-          <span class="sync-label">SYNC</span>
-          <input type="range" class="sync-slider" id="syncSlider" min="-15" max="15" step="0.5" value="0" oninput="updateSync(this.value)">
-          <span class="sync-val" id="syncVal">0.0s</span>
-        </div>
+        <!-- Now section indicator (compacto) -->
+        <div style="padding:.375rem 1rem;background:var(--surface);border-bottom:1px solid var(--border);font-family:var(--fc);font-size:11px;color:var(--gold2);letter-spacing:.04em" id="nowSection">— CARGÁ UN VIDEO —</div>
 
         <!-- Track -->
         <div class="timeline-section" id="trackSection">
@@ -682,25 +657,74 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
 
       </div>
 
-      <!-- RIGHT: panel flotante de secciones editable -->
+      <!-- RIGHT: controles + secciones -->
       <div class="analyzer-right">
-        <div style="padding:.625rem .875rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-          <span style="font-family:var(--fc);font-size:11px;color:var(--gold2);letter-spacing:.08em">SECCIONES</span>
-          <span style="font-size:10px;color:var(--tx3)" id="secCount">—</span>
+
+        <!-- CONTROLES DE REPRODUCCIÓN Y MARCADO -->
+        <div style="padding:.75rem;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:var(--fc);font-size:10px;color:var(--gold2);letter-spacing:.1em;margin-bottom:2px">CONTROLES</div>
+
+          <!-- Tiempo actual -->
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-family:var(--fm);font-size:22px;color:var(--gold2)" id="nowTime">0:00</span>
+            <span style="font-size:9px;color:var(--tx3)" id="nowMeta">—</span>
+          </div>
+
+          <!-- Play / Pausa -->
+          <button id="btnPlay" onclick="togglePlay()" disabled
+            style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);color:var(--tx2);cursor:pointer;font-family:var(--fc);font-size:13px;letter-spacing:.08em;transition:all .2s">
+            ▶ PLAY
+          </button>
+
+          <!-- MARCAR sección -->
+          <button id="btnMark" onclick="markNow()" disabled
+            style="width:100%;padding:10px;background:transparent;border:2px solid var(--gold);border-radius:var(--r);color:var(--gold);cursor:pointer;font-family:var(--fc);font-size:12px;font-weight:700;letter-spacing:.08em;transition:all .2s;opacity:.4"
+            title="Marcá el inicio de una nueva sección (atajo: M)">
+            ● MARCAR SECCIÓN
+          </button>
+
+          <!-- Sync offset -->
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:9px;color:var(--tx3);letter-spacing:.06em">SYNC</span>
+            <input type="range" id="syncSlider" min="-15" max="15" step="0.5" value="0"
+              oninput="updateSync(this.value)"
+              style="flex:1;accent-color:var(--gold)">
+            <span style="font-family:var(--fm);font-size:10px;color:var(--gold);min-width:30px" id="syncVal">0.0s</span>
+          </div>
         </div>
-        <!-- Cards editables -->
+
+        <!-- SECCIONES -->
+        <div style="padding:.5rem .75rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-family:var(--fc);font-size:10px;color:var(--gold2);letter-spacing:.08em">SECCIONES</span>
+          <div style="display:flex;gap:5px;align-items:center">
+            <span style="font-size:10px;color:var(--tx3)" id="secCount">—</span>
+            <button onclick="clearAllSections()"
+              style="font-size:9px;color:var(--tx3);background:none;border:1px solid var(--border);border-radius:2px;padding:2px 6px;cursor:pointer;transition:all .15s"
+              title="Limpiar todas las secciones">✕</button>
+          </div>
+        </div>
+
+        <!-- Lista de secciones -->
         <div id="secCardsWrap" style="overflow-y:auto;flex:1;padding:.5rem">
           <div id="secCards" style="display:flex;flex-direction:column;gap:5px"></div>
-          <div id="secEmptyRight" style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:11px;line-height:1.8">
-            Cargá un video<br>y presioná <strong style="color:var(--gold)">M</strong> para<br>marcar secciones
+          <div id="secEmptyRight" style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:11px;line-height:2">
+            Cargá un video<br>y presioná<br>
+            <strong style="color:var(--gold);font-size:13px">● MARCAR SECCIÓN</strong><br>
+            al inicio de cada parte
           </div>
         </div>
-        <!-- Botón guardar análisis -->
-        <div style="padding:.5rem;border-top:1px solid var(--border)">
+
+        <!-- Analizar -->
+        <div style="padding:.5rem .75rem;border-top:1px solid var(--border)">
           <div id="analyzeBar" style="display:none">
-            <button id="btnAnalyzeRight" onclick="startAnalysis()" style="width:100%;padding:8px;background:var(--gold);color:#000;border:none;border-radius:var(--r);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s;margin-bottom:4px">♪ ANALIZAR ARMONÍA</button>
+            <button onclick="startAnalysis()"
+              style="width:100%;padding:9px;background:var(--gold);color:#000;border:none;border-radius:var(--r);cursor:pointer;font-family:var(--fc);font-size:11px;font-weight:600;letter-spacing:.08em;transition:all .2s">
+              ♪ ANALIZAR ARMONÍA
+            </button>
           </div>
+          <button class="btn-save" id="btnSave" onclick="openSaveModal()" style="width:100%;margin-top:4px">GUARDAR EN BIBLIOTECA</button>
         </div>
+
       </div>
 
 </div>
@@ -866,12 +890,21 @@ window.addEventListener('message', function(e) {
     }
 
     // YouTube confirmó que el player está listo
-    if (data.event === 'onReady' || data.info && data.info.playerState === -1) {
+    if (data.event === 'onReady' || (data.info && data.info.playerState !== undefined)) {
       const btnP = document.getElementById('btnPlay');
       const btnM = document.getElementById('btnMark');
-      if (btnP) btnP.disabled = false;
-      if (btnM) { btnM.disabled = false; btnM.style.opacity = '1'; }
-      setStatus('success', 'Video listo · Dale play y presioná M para marcar secciones');
+      if (btnP && btnP.disabled) {
+        btnP.disabled = false;
+        btnP.style.cursor = 'pointer';
+      }
+      if (btnM && btnM.disabled) {
+        btnM.disabled = false;
+        btnM.style.opacity = '1';
+        btnM.style.cursor = 'pointer';
+      }
+      if (data.event === 'onReady') {
+        setStatus('success', 'Video listo · Dale play y presioná ● MARCAR SECCIÓN al inicio de cada parte');
+      }
     }
   } catch(ex) {}
 });
@@ -967,8 +1000,18 @@ function startPlayerPolling() {
 
 function handlePlayerState(state) {
   const btn = document.getElementById('btnPlay');
-  if (state === 1) { if (btn) btn.textContent = '⏸'; }
-  else             { if (btn) btn.textContent = '▶'; }
+  if (!btn) return;
+  if (state === 1) {
+    btn.textContent = '⏸ PAUSA';
+    btn.style.background = 'var(--surface3)';
+    btn.style.borderColor = 'var(--gold)';
+    btn.style.color = 'var(--gold)';
+  } else {
+    btn.textContent = '▶ PLAY';
+    btn.style.background = 'var(--surface2)';
+    btn.style.borderColor = 'var(--border2)';
+    btn.style.color = 'var(--tx2)';
+  }
 }
 
 
@@ -1662,15 +1705,17 @@ function markNow() {
     lastMarkTime = t;
   }
 
-  // Flash visual del botón
+  // Flash visual del botón MARCAR
   const btn = document.getElementById('btnMark');
   if (btn) {
     btn.style.background = 'var(--gold)';
     btn.style.color = '#000';
+    btn.style.transform = 'scale(0.97)';
     setTimeout(function() {
       btn.style.background = 'transparent';
       btn.style.color = 'var(--gold)';
-    }, 200);
+      btn.style.transform = 'scale(1)';
+    }, 180);
   }
 
   buildTL();
@@ -1891,11 +1936,17 @@ function setOvStep(step, pct) {
 }
 
 function updateTransport(t, i) {
-  if (!SECTIONS[i]) return;
-  const s = SECTIONS[i];
-  document.getElementById('nowSection').textContent = s.id + ' · ' + s.name;
-  document.getElementById('nowMeta').textContent = (s.time_signature || '4/4') + ' · ' + (s.key || '—') + ' · ' + (s.bpm || '—') + ' bpm';
-  document.getElementById('nowTime').textContent = fmt(t);
+  const timeEl = document.getElementById('nowTime');
+  const metaEl = document.getElementById('nowMeta');
+  const secEl  = document.getElementById('nowSection');
+  if (timeEl) timeEl.textContent = fmt(t);
+  if (SECTIONS[i]) {
+    const s = SECTIONS[i];
+    if (secEl)  secEl.textContent  = s.id + ' · ' + s.name;
+    if (metaEl) metaEl.textContent = (s.time_signature || '4/4') + ' · ' + (s.key || '—');
+  } else {
+    if (secEl && !SECTIONS.length) secEl.textContent = '— CARGÁ UN VIDEO —';
+  }
 }
 
 function toggleSection(i) {
