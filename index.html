@@ -3,7 +3,7 @@
      Video + Timeline editable + Base de datos compartida
      ============================================================
      ÍNDICE DE NAVEGACIÓN
-     [001] HEAD / META          - línea 14 
+     [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
      [003] HTML — VISTAS        - línea 310
      [004] DATOS Y ESTADO       - línea 460
@@ -890,24 +890,20 @@ window.addEventListener('message', function(e) {
     }
 
     // YouTube confirmó que el player está listo
-    if (data.event === 'onReady' || (data.info && data.info.playerState !== undefined)) {
-      const btnP = document.getElementById('btnPlay');
-      const btnM = document.getElementById('btnMark');
-      if (btnP && btnP.disabled) {
-        btnP.disabled = false;
-        btnP.style.cursor = 'pointer';
-      }
-      if (btnM && btnM.disabled) {
-        btnM.disabled = false;
-        btnM.style.opacity = '1';
-        btnM.style.cursor = 'pointer';
-      }
-      if (data.event === 'onReady') {
-        setStatus('success', 'Video listo · Dale play y presioná ● MARCAR SECCIÓN al inicio de cada parte');
-      }
+    if (data.event === 'onReady' || (data.info && data.info.duration)) {
+      enableControls();
+      if (data.info && data.info.duration > 0) TOTAL = data.info.duration;
     }
   } catch(ex) {}
 });
+
+function enableControls() {
+  const btnP = document.getElementById('btnPlay');
+  const btnM = document.getElementById('btnMark');
+  if (btnP) { btnP.disabled = false; btnP.style.cursor = 'pointer'; }
+  if (btnM) { btnM.disabled = false; btnM.style.opacity = '1'; btnM.style.cursor = 'pointer'; }
+  setStatus('success', 'Video cargado · Presioná ▶ PLAY para arrancar y ● MARCAR al inicio de cada sección');
+}
 
 function createPlayer(vid) {
   const wrap = document.getElementById('ytPlayer');
@@ -924,7 +920,8 @@ function createPlayer(vid) {
   wrap.innerHTML = '<iframe id="ytIframe" src="' + src + '" ' +
     'width="100%" height="100%" frameborder="0" ' +
     'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ' +
-    'allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe>';
+    'allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%" ' +
+    'onload="enableControls();startPlayerPolling()"></iframe>';
 
   // API simplificada via postMessage
   ytPlayer = {
@@ -970,32 +967,24 @@ function ytPostMessage(event, data) {
 
 let pollInterval = null;
 let lastPlayerState = -1;
+let isPlaying = false;
+let internalTime = 0;
 
 function startPlayerPolling() {
   if (pollInterval) clearInterval(pollInterval);
-
-  // Suscribirse a eventos del iframe de YouTube
-  function subscribe() {
-    const fr = document.getElementById('ytIframe');
-    if (!fr || !fr.contentWindow) return;
-    try {
-      // Suscribirse a info periódica
-      fr.contentWindow.postMessage(JSON.stringify({
-        event: 'listening', id: 1, channel: 'widget'
-      }), '*');
-      // Pedir estado actual
-      fr.contentWindow.postMessage(JSON.stringify({
-        event: 'command', func: 'getPlayerState', args: [], id: 1
-      }), '*');
-    } catch(e) {}
-  }
-
-  // Suscribirse cada 500ms para mantener el flujo de datos
-  pollInterval = setInterval(subscribe, 500);
-  // También suscribirse inmediatamente
-  setTimeout(subscribe, 300);
-  setTimeout(subscribe, 800);
-  setTimeout(subscribe, 1500);
+  // Reloj interno — avanza cuando el usuario da play manualmente en el video
+  // El usuario controla play/pausa con los controles nativos de YouTube
+  // Nuestro reloj se sincroniza con el botón PLAY de nuestro panel
+  pollInterval = setInterval(function() {
+    if (!isPlaying) return;
+    internalTime += 0.15;
+    if (TOTAL > 0 && internalTime > TOTAL) internalTime = TOTAL;
+    const t = Math.max(0, internalTime + offsetSecs);
+    const sec = getSectionAt(t);
+    if (sec !== currentSection) { currentSection = sec; renderDetail(sec); renderSList(); }
+    updateTransport(t, sec);
+    updatePlayhead(t);
+  }, 150);
 }
 
 function handlePlayerState(state) {
@@ -1016,21 +1005,36 @@ function handlePlayerState(state) {
 
 
 function togglePlay() {
+  isPlaying = !isPlaying;
+  handlePlayerState(isPlaying ? 1 : 2);
+  // Intentar también controlar el iframe (puede que funcione o no)
   const fr = document.getElementById('ytIframe');
-  if (!fr || !fr.contentWindow) return;
-  const state = (ytPlayer && ytPlayer._state) || -1;
-  const cmd = state === 1 ? 'pauseVideo' : 'playVideo';
-  try {
-    fr.contentWindow.postMessage(JSON.stringify({
-      event: 'command', func: cmd, args: [], id: 1
-    }), '*');
-  } catch(e) {}
+  if (fr && fr.contentWindow) {
+    try {
+      fr.contentWindow.postMessage(JSON.stringify({
+        event: 'command', func: isPlaying ? 'playVideo' : 'pauseVideo', args: [], id: 1
+      }), '*');
+    } catch(e) {}
+  }
+  if (isPlaying && !pollInterval) startPlayerPolling();
 }
 
 function startSync() { /* sync manejado por polling */ }
 function stopSync()  { /* sync manejado por polling */ }
 function getSectionAt(t) { for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start && !disabledSections.has(i)) return i; for (let i = SECTIONS.length-1; i>=0; i--) if (t>=SECTIONS[i].start) return i; return 0; }
-function updateSync(v) { offsetSecs = parseFloat(v); document.getElementById('syncVal').textContent = parseFloat(v).toFixed(1) + 's'; }
+function updateSync(v) {
+  offsetSecs = parseFloat(v);
+  document.getElementById('syncVal').textContent = parseFloat(v).toFixed(1) + 's';
+}
+
+// Ajuste manual de tiempo — el usuario puede corregir el reloj
+function adjustTime(delta) {
+  internalTime = Math.max(0, internalTime + delta);
+  const t = internalTime + offsetSecs;
+  const sec = getSectionAt(t);
+  updateTransport(t, sec);
+  updatePlayhead(t);
+}
 
 function seekTo(i) {
   if (!SECTIONS[i]) return;
@@ -1052,6 +1056,8 @@ function loadVideoOnly() {
   TOTAL = 0;
   SECTIONS = [];
   disabledSections = new Set();
+  internalTime = 0;
+  isPlaying = false;
 
   // Mostrar la vista del analyzer
   showView('analyzer');
@@ -1674,8 +1680,7 @@ function initTLDrag() {
 let lastMarkTime = null;
 
 function markNow() {
-  // Obtener tiempo actual del iframe
-  const t = Math.max(0, ((ytPlayer && ytPlayer._currentTime) || 0) + offsetSecs);
+  const t = Math.max(0, internalTime + offsetSecs);
   const T = TOTAL || 600;
 
   if (SECTIONS.length === 0) {
