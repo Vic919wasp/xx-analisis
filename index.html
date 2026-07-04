@@ -845,6 +845,8 @@ window.addEventListener('message', function(e) {
   if (!e.data) return;
   try {
     const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+
+    // YouTube manda info de tiempo/estado
     if (data.event === 'infoDelivery' && data.info) {
       if (data.info.currentTime !== undefined && ytPlayer) {
         ytPlayer._currentTime = data.info.currentTime;
@@ -858,20 +860,18 @@ window.addEventListener('message', function(e) {
         if (ytPlayer) ytPlayer._state = data.info.playerState;
         handlePlayerState(data.info.playerState);
       }
-      if (data.info.duration && data.info.duration > 0 && !TOTAL) {
-        TOTAL = data.info.duration;
+      if (data.info.duration && data.info.duration > 0) {
+        if (!TOTAL || TOTAL < data.info.duration) TOTAL = data.info.duration;
       }
     }
-    if (data.event === 'onReady') {
+
+    // YouTube confirmó que el player está listo
+    if (data.event === 'onReady' || data.info && data.info.playerState === -1) {
       const btnP = document.getElementById('btnPlay');
       const btnM = document.getElementById('btnMark');
       if (btnP) btnP.disabled = false;
       if (btnM) { btnM.disabled = false; btnM.style.opacity = '1'; }
-      // Pedir info del video
-      ytPostMessage('listening', {id: 1, channel: 'widget', func: 'addEventListener', args: ['onStateChange']});
-      ytPostMessage('listening', {id: 1, channel: 'widget', func: 'addEventListener', args: ['onReady']});
       setStatus('success', 'Video listo · Dale play y presioná M para marcar secciones');
-      startPlayerPolling();
     }
   } catch(ex) {}
 });
@@ -912,7 +912,7 @@ function createPlayer(vid) {
     },
     playVideo:  function() { this.postMsg('playVideo'); },
     pauseVideo: function() { this.postMsg('pauseVideo'); },
-    seekTo:     function(t) { this.postMsg('seekTo', [t, true]); },
+    seekTo:     function(t, b) { this.postMsg('seekTo', [t, true]); },
     getPlayerState: function() { return this._state; },
     getCurrentTime: function() { return this._currentTime || 0; },
     getDuration:    function() { return TOTAL || 0; },
@@ -940,16 +940,29 @@ let lastPlayerState = -1;
 
 function startPlayerPolling() {
   if (pollInterval) clearInterval(pollInterval);
-  // Pedir info periódicamente al iframe via postMessage
-  pollInterval = setInterval(function() {
+
+  // Suscribirse a eventos del iframe de YouTube
+  function subscribe() {
     const fr = document.getElementById('ytIframe');
     if (!fr || !fr.contentWindow) return;
     try {
+      // Suscribirse a info periódica
       fr.contentWindow.postMessage(JSON.stringify({
         event: 'listening', id: 1, channel: 'widget'
       }), '*');
+      // Pedir estado actual
+      fr.contentWindow.postMessage(JSON.stringify({
+        event: 'command', func: 'getPlayerState', args: [], id: 1
+      }), '*');
     } catch(e) {}
-  }, 250);
+  }
+
+  // Suscribirse cada 500ms para mantener el flujo de datos
+  pollInterval = setInterval(subscribe, 500);
+  // También suscribirse inmediatamente
+  setTimeout(subscribe, 300);
+  setTimeout(subscribe, 800);
+  setTimeout(subscribe, 1500);
 }
 
 function handlePlayerState(state) {
@@ -960,10 +973,15 @@ function handlePlayerState(state) {
 
 
 function togglePlay() {
-  if (!ytPlayer) return;
-  const state = ytPlayer.getPlayerState();
-  if (state === 1) ytPlayer.pauseVideo();
-  else ytPlayer.playVideo();
+  const fr = document.getElementById('ytIframe');
+  if (!fr || !fr.contentWindow) return;
+  const state = (ytPlayer && ytPlayer._state) || -1;
+  const cmd = state === 1 ? 'pauseVideo' : 'playVideo';
+  try {
+    fr.contentWindow.postMessage(JSON.stringify({
+      event: 'command', func: cmd, args: [], id: 1
+    }), '*');
+  } catch(e) {}
 }
 
 function startSync() { /* sync manejado por polling */ }
@@ -1613,8 +1631,8 @@ function initTLDrag() {
 let lastMarkTime = null;
 
 function markNow() {
-  if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
-  const t = Math.max(0, (ytPlayer._currentTime || 0) + offsetSecs);
+  // Obtener tiempo actual del iframe
+  const t = Math.max(0, ((ytPlayer && ytPlayer._currentTime) || 0) + offsetSecs);
   const T = TOTAL || 600;
 
   if (SECTIONS.length === 0) {
