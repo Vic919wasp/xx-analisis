@@ -3,7 +3,7 @@
      Video + Timeline editable + Base de datos compartida
      ============================================================
      ÍNDICE DE NAVEGACIÓN
-     [001] HEAD / META          - línea 14  
+     [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
      [003] HTML — VISTAS        - línea 310
      [004] DATOS Y ESTADO       - línea 460
@@ -1741,38 +1741,50 @@ document.addEventListener('mouseup', function() {
 let lastMarkTime = null;
 
 function markNow() {
+  // Obtener duración real ANTES de cualquier operación
+  if (!TOTAL) {
+    try {
+      const fr = document.getElementById('ytIframe');
+      if (fr && fr.contentDocument) {
+        const vid = fr.contentDocument.querySelector('video');
+        if (vid && vid.duration > 0) TOTAL = vid.duration;
+      }
+    } catch(e) {}
+    if (!TOTAL) TOTAL = 300;
+  }
+
   const t = Math.max(0, internalTime + offsetSecs);
-  const T = TOTAL || 600;
+  const T = TOTAL;
 
   if (SECTIONS.length === 0) {
-    // Primera sección empieza en 0
+    // Primera sección: empieza en 0, termina al final por ahora
     SECTIONS.push({
       id: '01', name: 'Sección 1', type: 'section',
-      start: 0, end: t > 0 ? t : T,
+      start: 0, end: T,
       time_signature: '4/4', bpm: null, key: null,
       chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
       feel: '', harmony: '', rhythm_analysis: '', color: '', voicings: '', comment: ''
     });
-    lastMarkTime = t;
   } else {
-    // Cerrar la última sección en t
-    const last = SECTIONS[SECTIONS.length - 1];
-    last.end = t;
-    // Nueva sección empieza en t
+    // Cerrar SOLO la última sección en t
+    const lastIdx = SECTIONS.length - 1;
+    SECTIONS[lastIdx].end = t;
+
+    // Nueva sección desde t hasta el final
     const id = String(SECTIONS.length + 1).padStart(2, '0');
-    const newName = suggestName();
     SECTIONS.push({
-      id: id, name: newName,
+      id: id, name: suggestName(),
       type: 'section',
       start: t, end: T,
       time_signature: '4/4', bpm: null, key: null,
       chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
       feel: '', harmony: '', rhythm_analysis: '', color: '', voicings: '', comment: ''
     });
-    lastMarkTime = t;
   }
 
-  // Flash visual del botón MARCAR
+  lastMarkTime = t;
+
+  // Flash botón MARCAR
   const btn = document.getElementById('btnMark');
   if (btn) {
     btn.style.background = 'var(--gold)';
@@ -1783,18 +1795,6 @@ function markNow() {
       btn.style.color = 'var(--gold)';
       btn.style.transform = 'scale(1)';
     }, 180);
-  }
-
-  // Si TOTAL no está definido, estimarlo
-  if (!TOTAL || TOTAL < internalTime) {
-    try {
-      const fr = document.getElementById('ytIframe');
-      if (fr && fr.contentDocument) {
-        const vid = fr.contentDocument.querySelector('video');
-        if (vid && vid.duration) TOTAL = vid.duration;
-      }
-    } catch(e) {}
-    if (!TOTAL) TOTAL = Math.max(internalTime * 2, 300);
   }
 
   buildTL();
