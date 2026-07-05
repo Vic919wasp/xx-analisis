@@ -760,7 +760,7 @@ let authToken = localStorage.getItem('xx_token');
 let authUser  = JSON.parse(localStorage.getItem('xx_user') || 'null');
 
 // Colores por tipo
-// Paleta por tipo — bg (timeline), accent (dot/borde), label
+// Paleta por tipo — bg, accent, label
 const TYPES = {
   intro:        { bg:'#0f0e14', accent:'#6b5a8b', label:'#9a80c8' },
   riff:         { bg:'#140808', accent:'#8b2020', label:'#c84040' },
@@ -777,12 +777,35 @@ const TYPES = {
   break:        { bg:'#140608', accent:'#8b1020', label:'#c82040' },
   outro:        { bg:'#0a0a0a', accent:'#3a3a3a', label:'#707070' },
   cambio:       { bg:'#0e0e06', accent:'#707010', label:'#c8c820' },
+  section:      { bg:'#0d0d0d', accent:'#5a4a20', label:'#8a7a40' },
 };
 const TDEF = { bg:'#0d0d0d', accent:'#5a4a20', label:'#8a7a40' };
-const gt = t => TYPES[t?.toLowerCase()] || TDEF;
-const gbg  = t => gt(t).bg;
-const gdot = t => gt(t).accent;
-const glbl = t => gt(t).label;
+
+// Paleta de colores por índice — para secciones neutras "Sección N"
+const SEC_COLORS = [
+  { bg:'#0a0814', accent:'#6030a0', label:'#9060d0' },
+  { bg:'#080e08', accent:'#206840', label:'#40b060' },
+  { bg:'#100808', accent:'#902020', label:'#c84040' },
+  { bg:'#0a0a00', accent:'#806010', label:'#c09020' },
+  { bg:'#060c10', accent:'#105878', label:'#20a0c0' },
+  { bg:'#100608', accent:'#801040', label:'#c03060' },
+  { bg:'#080810', accent:'#204080', label:'#4070c0' },
+  { bg:'#0c0a00', accent:'#705010', label:'#b08020' },
+  { bg:'#060a08', accent:'#106040', label:'#20a060' },
+  { bg:'#100a06', accent:'#804020', label:'#c06030' },
+  { bg:'#08060c', accent:'#502880', label:'#8050c0' },
+  { bg:'#0a0e06', accent:'#406010', label:'#80a020' },
+];
+
+const gt = function(t, idx) {
+  if (t === 'section' && idx !== undefined) {
+    return SEC_COLORS[idx % SEC_COLORS.length];
+  }
+  return TYPES[t?.toLowerCase()] || TDEF;
+};
+const gbg  = function(t, idx) { return gt(t, idx).bg; };
+const gdot = function(t, idx) { return gt(t, idx).accent; };
+const glbl = function(t, idx) { return gt(t, idx).label; };
 // [005] AUTH
 function updateAuthUI() {
   const loggedIn = !!authToken && !!authUser;
@@ -1352,8 +1375,8 @@ function safeParseJson(raw) {
 // ============================================================
 // SECTION CARDS — horizontal draggable list
 // ============================================================
-const ALL_TYPES = ['intro','verse','pre-coro','chorus','bridge','solo','riff','instrumental','break','outro'];
-const TYPE_LABELS = { intro:'INTRO', verse:'VERSO', 'pre-coro':'PRE-CORO', chorus:'CORO', bridge:'PUENTE', solo:'SOLO', riff:'RIFF', instrumental:'INSTR.', break:'BREAK', outro:'OUTRO', estrofa:'ESTROFA', precoro:'PRE-CORO', coro:'CORO', puente:'PUENTE', cambio:'TEMPO' };
+const ALL_TYPES = ['intro','verse','pre-coro','chorus','bridge','solo','riff','instrumental','break','outro','section'];
+const TYPE_LABELS = { intro:'INTRO', verse:'VERSO', 'pre-coro':'PRE-CORO', chorus:'CORO', bridge:'PUENTE', solo:'SOLO', riff:'RIFF', instrumental:'INSTR.', break:'BREAK', outro:'OUTRO', estrofa:'ESTROFA', precoro:'PRE-CORO', coro:'CORO', puente:'PUENTE', cambio:'TEMPO', section:'SECC.' };
 
 let dragSrcIdx = null;
 
@@ -1379,7 +1402,7 @@ function buildSecCards() {
   if (secCount) secCount.textContent = SECTIONS.length + ' secc.';
 
   SECTIONS.forEach(function(s, i) {
-    const T = gt(s.type);
+    const T = gt(s.type, i);
     const disabled = disabledSections.has(i);
 
     const card = document.createElement('div');
@@ -1617,7 +1640,7 @@ function buildTL() {
     const seg = document.createElement('div');
     seg.className = 'tl-seg' + (disabled ? ' disabled' : '');
     seg.id = 'tls' + i;
-    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gbg(s.type) + ';border-color:' + accent + '44';
+    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gbg(s.type, i) + ';border-color:' + accent + '44';
     seg.innerHTML =
       '<div class="tl-handle tl-handle-l" data-i="' + i + '" data-side="l" style="background:linear-gradient(90deg,' + accent + '66,transparent)"></div>' +
       '<div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:1px;overflow:hidden;padding:0 6px;width:100%">' +
@@ -1707,7 +1730,7 @@ function markNow() {
   if (SECTIONS.length === 0) {
     // Primera sección empieza en 0
     SECTIONS.push({
-      id: '01', name: 'Intro', type: 'intro',
+      id: '01', name: 'Sección 1', type: 'section',
       start: 0, end: t > 0 ? t : T,
       time_signature: '4/4', bpm: null, key: null,
       chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
@@ -1720,9 +1743,10 @@ function markNow() {
     last.end = t;
     // Nueva sección empieza en t
     const id = String(SECTIONS.length + 1).padStart(2, '0');
+    const newName = suggestName();
     SECTIONS.push({
-      id: id, name: suggestName(),
-      type: guessType(suggestName()),
+      id: id, name: newName,
+      type: 'section',
       start: t, end: T,
       time_signature: '4/4', bpm: null, key: null,
       chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
@@ -1766,22 +1790,23 @@ function markNow() {
 }
 
 function suggestName() {
-  const names = ['Intro','Verso 1','Pre-Coro','Coro 1','Verso 2','Pre-Coro 2','Coro 2','Puente','Solo','Coro final','Outro'];
-  return names[SECTIONS.length] || 'Sección ' + (SECTIONS.length + 1);
+  return 'Sección ' + (SECTIONS.length + 1);
 }
 
 function guessType(name) {
   const n = name.toLowerCase();
+  if (/^secci.n\s*\d+$/i.test(n)) return 'section'; // mantener neutro
   if (n.includes('intro'))  return 'intro';
   if (n.includes('coro') || n.includes('chorus')) return 'chorus';
   if (n.includes('pre'))    return 'pre-coro';
-  if (n.includes('verso') || n.includes('verse')) return 'verse';
+  if (n.includes('verso') || n.includes('verse') || n.includes('estrofa')) return 'verse';
   if (n.includes('puente') || n.includes('bridge')) return 'bridge';
   if (n.includes('solo'))   return 'solo';
   if (n.includes('outro'))  return 'outro';
   if (n.includes('riff'))   return 'riff';
   if (n.includes('instr'))  return 'instrumental';
-  return 'verse';
+  if (n.includes('break'))  return 'break';
+  return 'section';
 }
 
 function updateAnalyzeBar() {
@@ -2007,7 +2032,7 @@ function renderSList() {
   SECTIONS.forEach(function(s, i) {
     const disabled = disabledSections.has(i);
     const isCurrent = i === currentSection;
-    const accent = glbl(s.type);
+    const accent = glbl(s.type, i);
 
     const item = document.createElement('div');
     item.className = 'sl-item' + (isCurrent && !disabled ? ' active' : '') + (disabled ? ' disabled' : '');
