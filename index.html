@@ -781,20 +781,20 @@ const TYPES = {
 };
 const TDEF = { bg:'#0d0d0d', accent:'#5a4a20', label:'#8a7a40' };
 
-// Paleta de colores por índice — para secciones neutras "Sección N"
+// Paleta de colores vivos por índice — para secciones neutras "Sección N"
 const SEC_COLORS = [
-  { bg:'#0a0814', accent:'#6030a0', label:'#9060d0' },
-  { bg:'#080e08', accent:'#206840', label:'#40b060' },
-  { bg:'#100808', accent:'#902020', label:'#c84040' },
-  { bg:'#0a0a00', accent:'#806010', label:'#c09020' },
-  { bg:'#060c10', accent:'#105878', label:'#20a0c0' },
-  { bg:'#100608', accent:'#801040', label:'#c03060' },
-  { bg:'#080810', accent:'#204080', label:'#4070c0' },
-  { bg:'#0c0a00', accent:'#705010', label:'#b08020' },
-  { bg:'#060a08', accent:'#106040', label:'#20a060' },
-  { bg:'#100a06', accent:'#804020', label:'#c06030' },
-  { bg:'#08060c', accent:'#502880', label:'#8050c0' },
-  { bg:'#0a0e06', accent:'#406010', label:'#80a020' },
+  { bg:'#1a0a2e', accent:'#7c3aed', label:'#a78bfa' },  // violeta
+  { bg:'#0a1a10', accent:'#059669', label:'#34d399' },  // verde esmeralda
+  { bg:'#1a0a0a', accent:'#dc2626', label:'#f87171' },  // rojo
+  { bg:'#1a1000', accent:'#d97706', label:'#fbbf24' },  // ámbar
+  { bg:'#001a1a', accent:'#0891b2', label:'#22d3ee' },  // cian
+  { bg:'#1a0010', accent:'#db2777', label:'#f472b6' },  // rosa
+  { bg:'#000a1a', accent:'#2563eb', label:'#60a5fa' },  // azul
+  { bg:'#1a0a00', accent:'#ea580c', label:'#fb923c' },  // naranja
+  { bg:'#001a0a', accent:'#16a34a', label:'#4ade80' },  // verde lima
+  { bg:'#10001a', accent:'#9333ea', label:'#c084fc' },  // púrpura
+  { bg:'#1a1a00', accent:'#ca8a04', label:'#facc15' },  // amarillo
+  { bg:'#001010', accent:'#0d9488', label:'#2dd4bf' },  // teal
 ];
 
 const gt = function(t, idx) {
@@ -1640,7 +1640,8 @@ function buildTL() {
     const seg = document.createElement('div');
     seg.className = 'tl-seg' + (disabled ? ' disabled' : '');
     seg.id = 'tls' + i;
-    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + gbg(s.type, i) + ';border-color:' + accent + '44';
+    const bgColor = s.type === 'section' ? gt(s.type, i).accent + '33' : gbg(s.type, i);
+    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + bgColor + ';border-color:' + accent + ';border-width:1px';
     seg.innerHTML =
       '<div class="tl-handle tl-handle-l" data-i="' + i + '" data-side="l" style="background:linear-gradient(90deg,' + accent + '66,transparent)"></div>' +
       '<div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:1px;overflow:hidden;padding:0 6px;width:100%">' +
@@ -1670,53 +1671,61 @@ function updatePlayhead(t) {
   });
 }
 
+// Drag state global — único, no se acumula con cada buildTL
+let tlDrag = null;
+
 function initTLDrag() {
   const tl = document.getElementById('timeline');
-  let drag = null;
+  if (!tl || tl._dragInit) return; // ya inicializado
+  tl._dragInit = true;
 
-  // Solo manejar RESIZE de secciones existentes
   tl.addEventListener('mousedown', function(e) {
     const h = e.target.closest('[data-side]');
     if (!h) return;
     e.preventDefault();
+    e.stopPropagation();
     const i = parseInt(h.dataset.i);
-    drag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end };
+    if (!SECTIONS[i]) return;
+    tlDrag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end, tl };
     const seg = document.getElementById('tls' + i);
     if (seg) seg.classList.add('dragging');
   });
-
-  document.addEventListener('mousemove', function(e) {
-    if (!drag) return;
-    const rect = tl.getBoundingClientRect();
-    const dt = ((e.clientX - drag.x0) / rect.width) * (TOTAL || 600);
-    const tt = document.getElementById('tlTooltip');
-    const i = drag.i;
-    if (drag.side === 'l') {
-      SECTIONS[i].start = Math.max(0, Math.min(drag.s0 + dt, SECTIONS[i].end - 2));
-      if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
-      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].start/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].start); }
-    } else {
-      SECTIONS[i].end = Math.min(TOTAL || 600, Math.max(drag.e0 + dt, SECTIONS[i].start + 2));
-      if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
-      if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].end/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].end); }
-    }
-    refreshSeg(i);
-    if (drag.side === 'l' && i > 0) refreshSeg(i-1);
-    if (drag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
-  });
-
-  document.addEventListener('mouseup', function() {
-    if (!drag) return;
-    const seg = document.getElementById('tls' + drag.i);
-    if (seg) seg.classList.remove('dragging');
-    const tt = document.getElementById('tlTooltip');
-    if (tt) tt.style.display = 'none';
-    renderSList();
-    buildSecCards();
-    updateAnalyzeBar();
-    drag = null;
-  });
 }
+
+// Listeners globales únicos para el drag
+document.addEventListener('mousemove', function(e) {
+  if (!tlDrag) return;
+  const rect = tlDrag.tl.getBoundingClientRect();
+  const dt = ((e.clientX - tlDrag.x0) / rect.width) * (TOTAL || 600);
+  const tt = document.getElementById('tlTooltip');
+  const i = tlDrag.i;
+  if (!SECTIONS[i]) { tlDrag = null; return; }
+
+  if (tlDrag.side === 'l') {
+    SECTIONS[i].start = Math.max(0, Math.min(tlDrag.s0 + dt, SECTIONS[i].end - 1));
+    if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
+    if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].start/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].start); }
+  } else {
+    SECTIONS[i].end = Math.min(TOTAL || 600, Math.max(tlDrag.e0 + dt, SECTIONS[i].start + 1));
+    if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
+    if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].end/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].end); }
+  }
+  refreshSeg(i);
+  if (tlDrag.side === 'l' && i > 0) refreshSeg(i-1);
+  if (tlDrag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
+});
+
+document.addEventListener('mouseup', function() {
+  if (!tlDrag) return;
+  const seg = document.getElementById('tls' + tlDrag.i);
+  if (seg) seg.classList.remove('dragging');
+  const tt = document.getElementById('tlTooltip');
+  if (tt) tt.style.display = 'none';
+  renderSList();
+  buildSecCards();
+  updateAnalyzeBar();
+  tlDrag = null;
+});
 
 // ============================================================
 // MARK — marca inicio de sección en el tiempo actual
