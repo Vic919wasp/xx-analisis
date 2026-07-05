@@ -1050,7 +1050,7 @@ function handlePlayerState(state) {
 function togglePlay() {
   isPlaying = !isPlaying;
   handlePlayerState(isPlaying ? 1 : 2);
-  // Intentar también controlar el iframe (puede que funcione o no)
+  // Intentar controlar el iframe
   const fr = document.getElementById('ytIframe');
   if (fr && fr.contentWindow) {
     try {
@@ -1059,7 +1059,15 @@ function togglePlay() {
       }), '*');
     } catch(e) {}
   }
-  if (isPlaying && !pollInterval) startPlayerPolling();
+  if (isPlaying) {
+    if (!pollInterval) startPlayerPolling();
+    // Al dar play, mostrar la primera sección activa
+    if (SECTIONS.length > 0) {
+      currentSection = 0;
+      renderDetail(0);
+      renderSList();
+    }
+  }
 }
 
 function startSync() { /* sync manejado por polling */ }
