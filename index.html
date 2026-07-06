@@ -701,7 +701,10 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
             <span style="font-size:10px;color:var(--tx3)" id="secCount">—</span>
             <button onclick="clearAllSections()"
               style="font-size:9px;color:var(--tx3);background:none;border:1px solid var(--border);border-radius:2px;padding:2px 6px;cursor:pointer;transition:all .15s"
-              title="Limpiar todas las secciones">✕</button>
+              title="Limpiar todas las secciones">✕ LIMPIAR</button>
+            <button onclick="resetToStart()"
+              style="font-size:9px;color:var(--tx3);background:none;border:1px solid var(--border);border-radius:2px;padding:2px 6px;cursor:pointer;transition:all .15s"
+              title="Volver al inicio">⏮ INICIO</button>
           </div>
         </div>
 
@@ -1859,9 +1862,28 @@ function updateAnalyzeBar() {
 function clearAllSections() {
   if (SECTIONS.length && !confirm('Borrar todas las secciones?')) return;
   SECTIONS = []; disabledSections = new Set(); lastMarkTime = null;
+  currentSection = 0;
   buildTL(); buildSecCards(); renderSList(); updateAnalyzeBar();
+  updatePlayhead(internalTime);
   const empty = document.getElementById('tlEmpty');
   if (empty) empty.style.display = 'flex';
+}
+
+function resetToStart() {
+  // Volver al inicio del video y del reloj interno
+  internalTime = 0;
+  isPlaying = false;
+  handlePlayerState(2);
+  updateTransport(0, 0);
+  updatePlayhead(0);
+  // Intentar resetear el iframe también
+  const fr = document.getElementById('ytIframe');
+  if (fr && fr.contentWindow) {
+    try {
+      fr.contentWindow.postMessage(JSON.stringify({event:'command', func:'seekTo', args:[0,true], id:1}), '*');
+      fr.contentWindow.postMessage(JSON.stringify({event:'command', func:'pauseVideo', args:[], id:1}), '*');
+    } catch(e) {}
+  }
 }
 
 
