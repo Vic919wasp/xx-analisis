@@ -2,7 +2,7 @@
      XX Analysis v2 — Estética Dream Theater
      Video + Timeline editable + Base de datos compartida
      ============================================================
-     ÍNDICE DE NAVEGACIÓN  
+     ÍNDICE DE NAVEGACIÓN
      [001] HEAD / META          - línea 14
      [002] ESTILOS CSS          - línea 22
      [003] HTML — VISTAS        - línea 310
@@ -1053,7 +1053,8 @@ function handlePlayerState(state) {
 function togglePlay() {
   isPlaying = !isPlaying;
   handlePlayerState(isPlaying ? 1 : 2);
-  // Intentar controlar el iframe
+
+  // Controlar iframe
   const fr = document.getElementById('ytIframe');
   if (fr && fr.contentWindow) {
     try {
@@ -1062,14 +1063,37 @@ function togglePlay() {
       }), '*');
     } catch(e) {}
   }
+
   if (isPlaying) {
     if (!pollInterval) startPlayerPolling();
-    // Al dar play, mostrar la primera sección activa
-    if (SECTIONS.length > 0) {
-      currentSection = 0;
-      renderDetail(0);
-      renderSList();
+
+    // Si no hay secciones, crear la primera automáticamente desde 0
+    if (SECTIONS.length === 0) {
+      if (!TOTAL) {
+        try {
+          const fr2 = document.getElementById('ytIframe');
+          if (fr2 && fr2.contentDocument) {
+            const vid = fr2.contentDocument.querySelector('video');
+            if (vid && vid.duration > 0) TOTAL = vid.duration;
+          }
+        } catch(e) {}
+        if (!TOTAL) TOTAL = 300;
+      }
+      SECTIONS.push({
+        id: '01', name: 'Sección 1', type: 'section',
+        start: 0, end: TOTAL,
+        time_signature: '4/4', bpm: null, key: null,
+        chords: [], rhythm_pattern: [1,0,1,0,1,0,1,0],
+        feel: '', harmony: '', rhythm_analysis: '', color: '', voicings: '', comment: ''
+      });
+      buildTL(); buildSecCards(); renderSList(); updateAnalyzeBar();
+      const empty = document.getElementById('tlEmpty');
+      if (empty) empty.style.display = 'none';
     }
+
+    currentSection = 0;
+    renderDetail(0);
+    renderSList();
   }
 }
 
