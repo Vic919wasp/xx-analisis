@@ -614,6 +614,7 @@ body { background: var(--void); color: var(--tx); font-family: var(--fr); font-s
         <div class="video-section">
           <div class="video-wrap">
             <div class="video-wrap-inner">
+              <div id="iframeOverlay" style="display:none;position:absolute;inset:0;z-index:50;cursor:ew-resize"></div>
               <div id="ytPlayer">
                 <div class="video-placeholder">
                   <div class="vph-icon">▷</div>
@@ -1715,6 +1716,9 @@ function releaseDrag() {
   if (seg) seg.classList.remove('dragging');
   const tt = document.getElementById('tlTooltip');
   if (tt) tt.style.display = 'none';
+  // Quitar overlay del iframe
+  const overlay = document.getElementById('iframeOverlay');
+  if (overlay) overlay.style.display = 'none';
   renderSList();
   buildSecCards();
   updateAnalyzeBar();
@@ -1737,6 +1741,9 @@ function initTLDrag() {
     tlDrag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end, tl };
     const seg = document.getElementById('tls' + i);
     if (seg) seg.classList.add('dragging');
+    // Cubrir el iframe para que no intercepte el mouseup
+    const overlay = document.getElementById('iframeOverlay');
+    if (overlay) overlay.style.display = 'block';
     document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
   });
