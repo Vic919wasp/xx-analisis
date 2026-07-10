@@ -1115,6 +1115,7 @@ function adjustTime(delta) {
   updatePlayhead(t);
 }
 
+function seekToSection(i) { seekTo(i); }
 function seekTo(i) {
   if (!SECTIONS[i]) return;
   const t = Math.max(0, SECTIONS[i].start - offsetSecs);
@@ -1422,7 +1423,6 @@ function buildSecCards() {
   const analyzeBar = document.getElementById('analyzeBar');
   const secCount = document.getElementById('secCount');
   if (!container) return;
-
   container.innerHTML = '';
 
   if (!SECTIONS.length) {
@@ -1438,64 +1438,60 @@ function buildSecCards() {
   if (secCount) secCount.textContent = SECTIONS.length + ' secc.';
 
   SECTIONS.forEach(function(s, i) {
-    const T = gt(s.type, i);
-    const disabled = disabledSections.has(i);
-
+    const C = gt(s.type, i);
+    const isActive = i === currentSection;
     const card = document.createElement('div');
     card.id = 'scard' + i;
-    card.draggable = true;
     card.style.cssText = [
-      'background:' + T.bg,
-      'border:1px solid ' + T.accent + '55',
-      'border-left:3px solid ' + T.accent,
+      'background:' + C.bg,
+      'border:1px solid ' + (isActive ? C.label : C.accent + '66'),
+      'border-left:3px solid ' + C.accent,
       'border-radius:4px',
       'padding:8px 10px',
-      'cursor:grab',
-      'opacity:' + (disabled ? '.35' : '1'),
-      'transition:opacity .2s,border-color .2s',
-      'position:relative'
+      'transition:border-color .2s',
+      'cursor:pointer'
     ].join(';');
 
-    // Tipo — clickeable para cambiar
-    const typeRow = document.createElement('div');
-    typeRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px';
+    // — Fila 1: tipo + acciones
+    const row1 = document.createElement('div');
+    row1.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:5px';
 
+    // Tipo (clickeable)
     const typeBtn = document.createElement('span');
-    typeBtn.style.cssText = 'font-size:9px;font-weight:600;letter-spacing:.08em;color:' + T.label + ';cursor:pointer;padding:1px 5px;border:1px solid ' + T.accent + '44;border-radius:2px';
-    typeBtn.textContent = (TYPE_LABELS[s.type ? s.type.toLowerCase() : ''] || (s.type || 'TIPO').toUpperCase()) + ' ▾';
+    typeBtn.style.cssText = 'font-size:9px;font-weight:600;letter-spacing:.08em;color:' + C.label + ';cursor:pointer;padding:2px 6px;border:1px solid ' + C.accent + '55;border-radius:2px;user-select:none';
+    typeBtn.textContent = (TYPE_LABELS[s.type ? s.type.toLowerCase() : ''] || (s.type || 'SECC.').toUpperCase()) + ' ▾';
     typeBtn.addEventListener('click', function(e) { e.stopPropagation(); openTypePopup(i, typeBtn); });
 
-    // Acciones
-    const actions = document.createElement('div');
-    actions.style.cssText = 'display:flex;gap:3px';
+    // Acciones: ↑ ↓ ⧉ ✕
+    const acts = document.createElement('div');
+    acts.style.cssText = 'display:flex;gap:3px';
 
-    const btnTog = document.createElement('button');
-    btnTog.style.cssText = 'background:none;border:1px solid ' + (disabled ? '#333' : T.accent + '44') + ';border-radius:2px;color:' + (disabled ? '#444' : T.label) + ';cursor:pointer;font-size:9px;padding:1px 5px;line-height:1';
-    btnTog.textContent = disabled ? '✗' : '✓';
-    btnTog.addEventListener('click', function(e) { e.stopPropagation(); toggleSection(i); });
+    function mkBtn(label, title, color, fn) {
+      const b = document.createElement('button');
+      b.style.cssText = 'background:none;border:1px solid #333;border-radius:2px;color:' + (color||'#666') + ';cursor:pointer;font-size:10px;padding:1px 5px;line-height:1.4;transition:all .15s';
+      b.textContent = label; b.title = title;
+      b.addEventListener('click', function(e) { e.stopPropagation(); fn(); });
+      return b;
+    }
 
-    const btnDel = document.createElement('button');
-    btnDel.style.cssText = 'background:none;border:1px solid #333;border-radius:2px;color:#666;cursor:pointer;font-size:9px;padding:1px 5px;line-height:1';
-    btnDel.textContent = '×';
-    btnDel.addEventListener('click', function(e) { e.stopPropagation(); deleteSection(i); });
+    acts.appendChild(mkBtn('↑', 'Mover arriba', '#888', function() { moveSection(i, -1); }));
+    acts.appendChild(mkBtn('↓', 'Mover abajo',  '#888', function() { moveSection(i,  1); }));
+    acts.appendChild(mkBtn('⧉', 'Duplicar',     '#888', function() { duplicateSection(i); }));
+    acts.appendChild(mkBtn('×', 'Eliminar', '#c84040', function() { deleteSection(i); }));
 
-    actions.appendChild(btnTog);
-    actions.appendChild(btnDel);
-    typeRow.appendChild(typeBtn);
-    typeRow.appendChild(actions);
+    row1.appendChild(typeBtn);
+    row1.appendChild(acts);
 
-    // Nombre — editable inline con doble click
+    // — Fila 2: nombre editable inline
     const nameEl = document.createElement('div');
-    nameEl.style.cssText = 'font-size:12px;color:var(--tx);margin-bottom:3px;cursor:text';
+    nameEl.style.cssText = 'font-size:13px;color:var(--tx);margin-bottom:4px;cursor:text;border-bottom:1px solid transparent;transition:border-color .15s;outline:none';
     nameEl.textContent = s.name;
-    nameEl.title = 'Doble click para editar';
+    nameEl.title = 'Doble click para editar nombre';
     nameEl.addEventListener('dblclick', function(e) {
       e.stopPropagation();
       nameEl.contentEditable = 'true';
-      nameEl.style.outline = '1px solid ' + T.accent;
-      nameEl.style.borderRadius = '2px';
+      nameEl.style.borderBottomColor = C.accent;
       nameEl.focus();
-      // Seleccionar todo
       const range = document.createRange();
       range.selectNodeContents(nameEl);
       window.getSelection().removeAllRanges();
@@ -1503,7 +1499,7 @@ function buildSecCards() {
     });
     nameEl.addEventListener('blur', function() {
       nameEl.contentEditable = 'false';
-      nameEl.style.outline = 'none';
+      nameEl.style.borderBottomColor = 'transparent';
       const newName = nameEl.textContent.trim();
       if (newName && newName !== SECTIONS[i].name) {
         SECTIONS[i].name = newName;
@@ -1512,70 +1508,59 @@ function buildSecCards() {
       }
     });
     nameEl.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+      if (e.key === 'Enter')  { e.preventDefault(); nameEl.blur(); }
       if (e.key === 'Escape') { nameEl.textContent = SECTIONS[i].name; nameEl.blur(); }
     });
 
-    // Tiempo
-    const timeEl = document.createElement('div');
-    timeEl.style.cssText = 'font-family:var(--fm);font-size:9px;color:var(--tx3)';
-    timeEl.textContent = fmt(s.start) + ' – ' + fmt(s.end) + ' · ' + Math.round(s.end - s.start) + 's';
+    // — Fila 3: tiempos editables
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:4px;font-family:var(--fm);font-size:10px;color:var(--tx3)';
 
-    card.appendChild(typeRow);
+    function timeInput(val, onChange) {
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.value = fmt(val);
+      inp.style.cssText = 'background:rgba(255,255,255,.05);border:1px solid #333;border-radius:2px;color:var(--tx2);font-family:var(--fm);font-size:10px;width:40px;padding:1px 3px;text-align:center;outline:none';
+      inp.addEventListener('focus', function() { inp.select(); });
+      inp.addEventListener('change', function() {
+        const parts = inp.value.split(':');
+        if (parts.length === 2) {
+          const sec = parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+          if (!isNaN(sec)) onChange(sec);
+        }
+        refreshAll();
+      });
+      inp.addEventListener('click', function(e) { e.stopPropagation(); });
+      return inp;
+    }
+
+    const startInp = timeInput(s.start, function(v) {
+      SECTIONS[i].start = Math.max(0, Math.min(v, SECTIONS[i].end - 1));
+      if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
+    });
+    const endInp = timeInput(s.end, function(v) {
+      SECTIONS[i].end = Math.min(TOTAL || 600, Math.max(v, SECTIONS[i].start + 1));
+      if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
+    });
+
+    const durSpan = document.createElement('span');
+    durSpan.style.cssText = 'color:var(--tx3);font-size:9px;margin-left:2px';
+    durSpan.textContent = Math.round(s.end - s.start) + 's';
+
+    timeRow.appendChild(startInp);
+    timeRow.appendChild(document.createTextNode(' – '));
+    timeRow.appendChild(endInp);
+    timeRow.appendChild(durSpan);
+
+    card.appendChild(row1);
     card.appendChild(nameEl);
-    card.appendChild(timeEl);
-
-    // Drag para reordenar
-    card.addEventListener('dragstart', function(e) { cardDragStart(e, i); });
-    card.addEventListener('dragover',  function(e) { cardDragOver(e, i); });
-    card.addEventListener('drop',      function(e) { cardDrop(e, i); });
-    card.addEventListener('dragend',   cardDragEnd);
-    card.addEventListener('click',     function() { seekTo(i); renderDetail(i); });
-
+    card.appendChild(timeRow);
+    card.addEventListener('click', function() { seekToSection(i); });
     container.appendChild(card);
   });
 
   updateAnalyzeBar();
 }
 
-
-function cardDragStart(e, i) {
-  dragSrcIdx = i;
-  e.dataTransfer.effectAllowed = 'move';
-  setTimeout(() => { const c = document.getElementById('scard' + i); if (c) c.classList.add('dragging-card'); }, 0);
-}
-
-function cardDragOver(e, i) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  document.querySelectorAll('.sec-card').forEach(c => c.classList.remove('drag-over'));
-  const c = document.getElementById('scard' + i);
-  if (c && i !== dragSrcIdx) c.classList.add('drag-over');
-}
-
-function cardDrop(e, targetIdx) {
-  e.preventDefault();
-  if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
-  // Reordenar SECTIONS
-  const moved = SECTIONS.splice(dragSrcIdx, 1)[0];
-  SECTIONS.splice(targetIdx, 0, moved);
-  // Actualizar disabledSections
-  const newDisabled = new Set();
-  disabledSections.forEach(di => {
-    if (di === dragSrcIdx) newDisabled.add(targetIdx);
-    else if (dragSrcIdx < targetIdx && di > dragSrcIdx && di <= targetIdx) newDisabled.add(di - 1);
-    else if (dragSrcIdx > targetIdx && di >= targetIdx && di < dragSrcIdx) newDisabled.add(di + 1);
-    else newDisabled.add(di);
-  });
-  disabledSections = newDisabled;
-  dragSrcIdx = null;
-  refreshAll();
-}
-
-function cardDragEnd() {
-  dragSrcIdx = null;
-  document.querySelectorAll('.sec-card').forEach(c => { c.classList.remove('dragging-card'); c.classList.remove('drag-over'); });
-}
 
 function deleteSection(i) {
   if (!confirm('Eliminar sección "' + SECTIONS[i].name + '"?')) return;
@@ -1666,31 +1651,41 @@ function buildTL() {
   const tl = document.getElementById('timeline');
   const ph = document.getElementById('tlPlayhead');
   const tt = document.getElementById('tlTooltip');
-  tl.innerHTML = ''; tl.appendChild(ph); tl.appendChild(tt);
-  SECTIONS.forEach((s, i) => {
-    const left = (s.start / TOTAL) * 100;
-    const w = ((s.end - s.start) / TOTAL) * 100;
-    const disabled = disabledSections.has(i);
-    const accent = gt(s.type).accent;
-    const label = gt(s.type).label;
+  tl.innerHTML = '';
+  if (ph) tl.appendChild(ph);
+  if (tt) tl.appendChild(tt);
+
+  const T = TOTAL || 300;
+  SECTIONS.forEach(function(s, i) {
+    const left  = Math.max(0, Math.min(99, (s.start / T) * 100));
+    const width = Math.max(0.5, Math.min(100 - left, ((s.end - s.start) / T) * 100));
+    const C = gt(s.type, i);
+
     const seg = document.createElement('div');
-    seg.className = 'tl-seg' + (disabled ? ' disabled' : '');
-    seg.id = 'tls' + i;
-    const bgColor = s.type === 'section' ? gt(s.type, i).accent + '33' : gbg(s.type, i);
-    seg.style.cssText = 'left:' + left + '%;width:' + w + '%;background:' + bgColor + ';border-color:' + accent + ';border-width:1px';
-    seg.innerHTML =
-      '<div class="tl-handle tl-handle-l" data-i="' + i + '" data-side="l" style="background:linear-gradient(90deg,' + accent + '66,transparent)"></div>' +
-      '<div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:1px;overflow:hidden;padding:0 6px;width:100%">' +
-        '<span style="font-size:9px;color:' + label + ';font-weight:600;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;width:100%;text-align:center;text-shadow:0 0 6px ' + accent + '">' + s.name + '</span>' +
-        '<span style="font-size:8px;color:' + accent + ';white-space:nowrap;font-family:var(--fm)">' + fmt(s.start) + '</span>' +
-      '</div>' +
-      '<div class="tl-handle tl-handle-r" data-i="' + i + '" data-side="r" style="background:linear-gradient(270deg,' + accent + '66,transparent)"></div>';
-    seg.addEventListener('click', function(e) { if (!e.target.dataset.side) seekTo(i); });
+    seg.className = 'tl-seg' + (i === currentSection ? ' active' : '');
+    seg.dataset.idx = i;
+    seg.style.cssText = [
+      'position:absolute',
+      'top:3px', 'bottom:3px',
+      'left:' + left + '%',
+      'width:' + width + '%',
+      'background:' + (s.type === 'section' ? C.accent + '33' : C.bg),
+      'border:1px solid ' + C.accent,
+      'border-radius:3px',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'overflow:hidden', 'cursor:pointer',
+      'font-size:8px', 'color:' + C.label,
+      'white-space:nowrap', 'padding:0 3px',
+      'transition:border-color .15s'
+    ].join(';');
+    seg.textContent = s.name;
+    seg.title = s.name + ' · ' + fmt(s.start) + ' – ' + fmt(s.end);
     tl.appendChild(seg);
   });
-  document.getElementById('tlHint').textContent = '↔ arrastrá los bordes · click para saltar';
+
   initTLDrag();
 }
+
 
 function updatePlayhead(t) {
   const T = TOTAL || 300;
@@ -1707,75 +1702,19 @@ function updatePlayhead(t) {
   });
 }
 
-// Drag state global
-let tlDrag = null;
-
-function releaseDrag() {
-  if (!tlDrag) return;
-  const seg = document.getElementById('tls' + tlDrag.i);
-  if (seg) seg.classList.remove('dragging');
-  const tt = document.getElementById('tlTooltip');
-  if (tt) tt.style.display = 'none';
-  // Quitar overlay del iframe
-  const overlay = document.getElementById('iframeOverlay');
-  if (overlay) overlay.style.display = 'none';
-  renderSList();
-  buildSecCards();
-  updateAnalyzeBar();
-  tlDrag = null;
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
-}
-
+// Sin drag de bordes — edición via cards en el panel derecho
 function initTLDrag() {
+  // Solo click en segmento para saltar
   const tl = document.getElementById('timeline');
   if (!tl || tl._dragInit) return;
   tl._dragInit = true;
-
-  tl.addEventListener('mousedown', function(e) {
-    const h = e.target.closest('[data-side]');
-    if (!h) return;
-    e.preventDefault();
-    const i = parseInt(h.dataset.i);
-    if (!SECTIONS[i]) return;
-    tlDrag = { i, side: h.dataset.side, x0: e.clientX, s0: SECTIONS[i].start, e0: SECTIONS[i].end, tl };
-    const seg = document.getElementById('tls' + i);
-    if (seg) seg.classList.add('dragging');
-    // Cubrir el iframe para que no intercepte el mouseup
-    const overlay = document.getElementById('iframeOverlay');
-    if (overlay) overlay.style.display = 'block';
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
+  tl.addEventListener('click', function(e) {
+    const seg = e.target.closest('.tl-seg');
+    if (!seg) return;
+    const i = parseInt(seg.dataset.idx);
+    if (!isNaN(i)) seekToSection(i);
   });
 }
-
-document.addEventListener('mousemove', function(e) {
-  if (!tlDrag) return;
-  const tl = document.getElementById('timeline');
-  if (!tl) { releaseDrag(); return; }
-  const rect = tl.getBoundingClientRect();
-  const dt = ((e.clientX - tlDrag.x0) / rect.width) * (TOTAL || 600);
-  const tt = document.getElementById('tlTooltip');
-  const i = tlDrag.i;
-  if (!SECTIONS[i]) { releaseDrag(); return; }
-
-  if (tlDrag.side === 'l') {
-    SECTIONS[i].start = Math.max(0, Math.min(tlDrag.s0 + dt, SECTIONS[i].end - 1));
-    if (i > 0) SECTIONS[i-1].end = SECTIONS[i].start;
-    if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].start/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].start); }
-  } else {
-    SECTIONS[i].end = Math.min(TOTAL || 600, Math.max(tlDrag.e0 + dt, SECTIONS[i].start + 1));
-    if (i < SECTIONS.length-1) SECTIONS[i+1].start = SECTIONS[i].end;
-    if (tt) { tt.style.display = 'block'; tt.style.left = ((SECTIONS[i].end/(TOTAL||600))*100) + '%'; tt.textContent = fmt(SECTIONS[i].end); }
-  }
-  refreshSeg(i);
-  if (tlDrag.side === 'l' && i > 0) refreshSeg(i-1);
-  if (tlDrag.side === 'r' && i < SECTIONS.length-1) refreshSeg(i+1);
-});
-
-document.addEventListener('mouseup',    releaseDrag);
-document.addEventListener('mouseleave', releaseDrag);
-window.addEventListener('blur',         releaseDrag);
 
 // ============================================================
 // MARK — marca inicio de sección en el tiempo actual
@@ -1926,15 +1865,7 @@ function resetToStart() {
 }
 
 
-function refreshSeg(i) {
-  const seg = document.getElementById('tls' + i);
-  if (!seg || !SECTIONS[i]) return;
-  const T = TOTAL || 300;
-  const left  = Math.max(0, Math.min(100, (SECTIONS[i].start / T) * 100));
-  const width = Math.max(0.5, Math.min(100 - left, ((SECTIONS[i].end - SECTIONS[i].start) / T) * 100));
-  seg.style.left  = left + '%';
-  seg.style.width = width + '%';
-}
+function refreshSeg(i) { buildTL(); }
 
 // [009] BIBLIOTECA
 async function loadBib(artist = '') {
